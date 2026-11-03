@@ -5,6 +5,7 @@
 **An AI that actually behaves like a group-chat member — not a support bot.**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/Coomusk/qq-xiaoyu/ci.yml?branch=main&label=CI&logo=github)](https://github.com/Coomusk/qq-xiaoyu/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522.13-339933?logo=node.js&logoColor=white)](package.json)
 [![Status](https://img.shields.io/badge/status-beta-orange)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%C2%B7%20Node.js-lightgrey)](#prerequisites)

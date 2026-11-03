@@ -34,6 +34,10 @@
 
 - `test-audit-setup-guards`：`start.bat` 的 ASCII 断言从红转绿
 - `test-voice-system`：全新 clone 上 `docs/guides/VOICE.md` ENOENT 导致整套崩溃
+- `test-preset-local-tools`：找不到 DSH 安装时 `dshPackagesDir()` 抛错穿透成失败 —— 任何干净 clone / CI 必红，现在归一成「跳过」
+- `.gitattributes`：preset 的 YAML 行尾钉死 CRLF。曾经写过全局 `eol=lf`，导致全新 clone 上 `test-preset-prompt`（断言保持 CRLF 写回）必红，而作者本地看不出来
+- CI：跑在 `windows-latest`（运行面就是 Windows），失败时输出 annotation 指明是哪条套件
+- Dependabot：只收 minor/patch，`@snowluma/*` 不动（postinstall 会对它的 dist 打补丁）
 
 ### 移除
 
