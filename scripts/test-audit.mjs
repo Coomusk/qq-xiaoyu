@@ -92,7 +92,13 @@ for (const test of tests) {
       console.warn(`KNOWN-RED ${test}（已知问题，见 KNOWN_ISSUES.md）`);
     } else {
       failed++;
-      console.error(`FAILED ${test}: ${result.error?.message || `exit ${result.status}`}`);
+      const why = result.error?.message || `exit ${result.status}`;
+      console.error(`FAILED ${test}: ${why}`);
+      // 在 Actions 里把它变成一条 annotation：日志要登录才能看，而 annotations
+      // 是公开读的 —— 失败时不用翻几百行日志就能知道是哪个套件、什么原因。
+      if (process.env.GITHUB_ACTIONS) {
+        console.log(`::error title=回归失败：${test}::${why}`);
+      }
     }
   }
 }
