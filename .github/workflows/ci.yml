@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: 离线回归 + 文档链接
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # 30/35 通过、5 个由 KNOWN_RED 隔离（见 KNOWN_ISSUES.md）。
+      # 新增的失败会让这一步红；修好一个已知红就从 scripts/test-audit.mjs 的 KNOWN_RED 里删掉。
+      - name: npm run test:audit
+        run: npm run test:audit
+      - name: 文档相对链接
+        run: node scripts/check-doc-links.mjs
+
+  hygiene:
+    name: 仓库卫生
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 隐私扫描（挡真实 QQ 号 / 本机路径 / 令牌）
+        run: node scripts/privacy-scan.mjs --tracked-only
+      - name: 禁止提交的文件
+        run: |
+          set -e
+          bad=$(git ls-files | grep -E '^(config\.json|state/|audio/|node_modules/)|\.bak(-|$)' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::禁止提交 config.json / state/ / audio/ / node_modules/ / *.bak*"
+            echo "$bad"
+            exit 1
+          fi
+      - name: 源码语法
+        run: |
+          set -e
+          for f in $(git ls-files '*.js' '*.mjs'); do node --check "$f"; done
+
+  powershell:
+    name: PowerShell 语法（Windows）
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 解析全部 .ps1
+        shell: pwsh
+        run: |
+          $failed = @()
+          Get-ChildItem tools,scripts -Filter *.ps1 -File -Recurse | ForEach-Object {
+            $err = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$err)
+            if ($err -and $err.Count) { $failed += "$($_.Name): $($err[0].Message)" }
+          }
+          if ($failed) { $failed | ForEach-Object { Write-Error $_ }; exit 1 }
+          Write-Host "所有 .ps1 解析通过"

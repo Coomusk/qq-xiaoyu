@@ -1,0 +1,22 @@
+# 统一换行：仓库内用 LF，只有 Windows 批处理用 CRLF
+* text=auto eol=lf
+
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=lf
+*.vbs   text eol=crlf
+
+# 二进制
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.mp3   binary
+*.wav   binary
+*.ogg   binary
+*.zip   binary
+
+# 语言统计：文档也算进来，测试夹具不算
+*.md    text
+scripts/fixtures/** linguist-vendored

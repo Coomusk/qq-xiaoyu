@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小鱼 · 控制面板</title>
+<style>
+  :root{
+    --bg:#FAF9F5; --panel:#FFFFFF; --panel-2:#F5F3EE;
+    --text:#1F1E1D; --muted:#6B6862; --faint:#9A968E;
+    --border:#E5E2D9; --border-strong:#D6D2C6;
+    --accent:#C96442; --accent-soft:#F7EDE8; --accent-line:#E8CFC3;
+    --ok:#3F7D5A; --warn:#B4762A; --bad:#B4433A;
+    --radius:12px; --radius-sm:8px;
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Code",Consolas,monospace;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Songti SC",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent)}
+  .shell{display:grid; grid-template-columns:212px minmax(0,1fr); min-height:100vh}
+  /* ── 侧栏 ── */
+  aside{
+    border-right:1px solid var(--border); padding:22px 14px;
+    position:sticky; top:0; height:100vh; overflow:auto; background:var(--bg);
+  }
+  .brand{display:flex; align-items:center; gap:9px; padding:0 8px 18px}
+  .mark{
+    width:26px;height:26px;border-radius:8px;background:var(--accent);
+    display:grid;place-items:center;color:#fff;font-weight:600;font-size:13px;
+    font-family:var(--serif); flex:none;
+  }
+  .brand b{font-family:var(--serif); font-weight:600; font-size:15px; letter-spacing:.2px}
+  .brand span{display:block; font-size:11px; color:var(--faint); letter-spacing:.4px}
+  nav{display:flex; flex-direction:column; gap:2px}
+  nav a{
+    display:flex; align-items:center; gap:9px; padding:7px 10px; border-radius:var(--radius-sm);
+    color:var(--muted); text-decoration:none; font-size:13px; transition:background .12s,color .12s;
+  }
+  nav a:hover{background:var(--panel-2); color:var(--text)}
+  nav a.on{background:var(--accent-soft); color:var(--accent); font-weight:500}
+  nav a .dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.45;flex:none}
+  .side-foot{margin-top:22px; padding:12px 10px; border-top:1px solid var(--border); font-size:11px; color:var(--faint); line-height:1.7}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--border)}
+  .pill.ok{color:var(--ok);border-color:#CFE3D6;background:#F2F8F4}
+  .pill.bad{color:var(--bad);border-color:#EBCFCB;background:#FBF1F0}
+
+  /* ── 主区 ── */
+  main{padding:30px 34px 80px; max-width:1080px}
+  header.top{margin-bottom:26px}
+  h1{font-family:var(--serif); font-size:26px; font-weight:600; margin:0 0 6px; letter-spacing:-.2px}
+  .sub{color:var(--muted); font-size:13px; margin:0}
+  h2{font-family:var(--serif); font-size:16px; font-weight:600; margin:0 0 3px}
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 20px; margin-bottom:16px;
+  }
+  .card-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap}
+  .hint{color:var(--muted); font-size:12px; margin:0 0 12px}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .spacer{flex:1}
+
+  /* 输入 */
+  input[type=number],input[type=text],textarea,select{
+    font-family:inherit; font-size:13px; color:var(--text); background:var(--panel);
+    border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:7px 10px; outline:none;
+    transition:border-color .12s, box-shadow .12s;
+  }
+  input:focus,textarea:focus,select:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+  input[type=number]{width:112px; font-variant-numeric:tabular-nums}
+  textarea{
+    width:100%; resize:vertical; line-height:1.75; font-size:13px;
+    font-family:var(--mono); background:#FCFBF8;
+  }
+  #promptBox{min-height:320px}
+  #roleBox{min-height:260px; font-family:var(--sans); font-size:13px; line-height:1.9}
+  input[type=range]{flex:1; min-width:180px; accent-color:var(--accent)}
+
+  /* 按钮 */
+  button{
+    font-family:inherit; font-size:13px; cursor:pointer; border-radius:var(--radius-sm);
+    padding:6px 13px; border:1px solid var(--border-strong); background:var(--panel); color:var(--text);
+    transition:background .12s,border-color .12s,opacity .12s;
+  }
+  button:hover{background:var(--panel-2)}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  button.primary:hover{filter:brightness(.95); background:var(--accent)}
+  button.ghost{border-color:transparent; background:transparent; color:var(--muted)}
+  button.ghost:hover{background:var(--panel-2); color:var(--text)}
+  button:disabled{opacity:.45; cursor:not-allowed}
+  .seg{display:inline-flex; border:1px solid var(--border-strong); border-radius:var(--radius-sm); overflow:hidden}
+  .seg button{border:0; border-radius:0; padding:6px 12px; background:var(--panel); color:var(--muted)}
+  .seg button + button{border-left:1px solid var(--border)}
+  .seg button.on{background:var(--accent-soft); color:var(--accent); font-weight:500}
+
+  /* 会话条 */
+  .bars{display:flex; flex-direction:column; gap:11px}
+  .bar-row{display:grid; grid-template-columns:150px minmax(0,1fr) 92px; gap:12px; align-items:center; font-size:12px}
+  .bar-key{font-family:var(--mono); color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .bar-key .stale{color:var(--faint); font-family:var(--sans); font-size:10.5px; margin-left:5px}
+  .bar-row.stale{opacity:.55}
+  .bar-row.stale .bar-key{color:var(--faint)}
+  .bar-row.stale .fill{background:var(--border-strong)}
+  .track{height:7px; border-radius:99px; background:var(--panel-2); overflow:hidden}
+  .fill{height:100%; border-radius:99px; background:var(--accent); transition:width .4s ease}
+  .fill.warn{background:var(--warn)} .fill.bad{background:var(--bad)}
+  .bar-val{text-align:right; font-variant-numeric:tabular-nums; color:var(--muted)}
+
+  /* 工具开关 */
+  .tools{display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:8px}
+  .tool{
+    display:flex; align-items:center; gap:10px; padding:8px 11px; border:1px solid var(--border);
+    border-radius:var(--radius-sm); background:var(--panel); cursor:pointer; user-select:none;
+    transition:border-color .12s,background .12s;
+  }
+  .tool:hover{border-color:var(--border-strong); background:#FCFBF8}
+  .tool .nm{flex:1; min-width:0; font-size:12.5px}
+  .tool .nm small{display:block; color:var(--faint); font-size:10.5px; font-family:var(--mono); letter-spacing:-.2px}
+  .sw{width:32px; height:18px; border-radius:99px; background:var(--border-strong); position:relative; flex:none; transition:background .15s}
+  .sw::after{content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition:transform .15s; box-shadow:0 1px 2px rgba(0,0,0,.15)}
+  .tool.on .sw{background:var(--accent)}
+  .tool.on .sw::after{transform:translateX(14px)}
+  .tool.off .nm{color:var(--faint)}
+  .cat{font-size:11px; color:var(--faint); letter-spacing:.6px; text-transform:uppercase; margin:14px 0 7px}
+  .cat:first-child{margin-top:0}
+
+  /* 日志 */
+  pre.log{
+    margin:0; padding:12px 14px; background:#FBFAF6; border:1px solid var(--border); border-radius:var(--radius-sm);
+    font-family:var(--mono); font-size:11.5px; line-height:1.65; color:var(--muted);
+    max-height:220px; overflow:auto; white-space:pre-wrap; word-break:break-all;
+  }
+  .meta{display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:14px}
+  .meta b{color:var(--text); font-weight:500; font-variant-numeric:tabular-nums}
+
+  .checks{display:flex; flex-direction:column; gap:8px}  .chk{display:flex; align-items:center; gap:10px; font-size:12.5px; flex-wrap:wrap}
+  .chk .dot{width:7px; height:7px; border-radius:50%; flex:none; background:var(--border-strong)}
+  .chk.ok .dot{background:var(--ok)}
+  .chk.bad .dot{background:var(--bad)}
+  .chk .lbl{min-width:176px}
+  .chk .det{color:var(--muted); font-size:12px; flex:1; min-width:120px}
+
+  /* 体检 */
+  .score{font-family:var(--serif); font-size:26px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1}
+  .score small{font-size:12px; color:var(--faint); font-weight:400; margin-left:3px}
+  .dims{display:flex; flex-direction:column; gap:9px; margin-top:4px}
+  .dim{display:grid; grid-template-columns:88px minmax(0,1fr) 46px; gap:10px; align-items:center; font-size:12px}
+  .dim .n{color:var(--muted)}
+  .dim .v{text-align:right; font-variant-numeric:tabular-nums; color:var(--muted)}
+  .trend{margin-top:14px; padding-top:12px; border-top:1px solid var(--border)}
+  .trend svg{display:block; width:100%; height:52px; overflow:visible}
+  .trend .cap{font-size:11px; color:var(--faint); margin-bottom:6px}
+
+  /* 会话 / 备份 列表 */
+  .sess{display:flex; flex-direction:column; gap:8px}
+  .sess-row{display:flex; align-items:center; gap:10px; padding:8px 11px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12.5px}
+  .sess-row .k{font-family:var(--mono); color:var(--muted); min-width:150px}
+  .sess-row .t{font-variant-numeric:tabular-nums; color:var(--faint); min-width:56px; text-align:right}
+  .sess-row .sp{flex:1}
+  .sess-row button{padding:3px 9px; font-size:11.5px}
+  .bk{display:flex; flex-direction:column; gap:6px}
+  .bk-row{display:flex; align-items:center; gap:8px; font-size:12px}
+  .bk-row .nm{font-family:var(--mono); color:var(--muted); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .bk-row .sz{color:var(--faint); font-variant-numeric:tabular-nums}
+  .bk-row button{padding:2px 8px; font-size:11px}
+  pre.nb{margin:10px 0 0; padding:11px 13px; background:#FBFAF6; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:var(--sans); font-size:12.5px; line-height:1.85; color:var(--muted); max-height:260px; overflow:auto; white-space:pre-wrap}
+
+  /* toast */
+  #toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(12px);
+    background:#26251F; color:#F7F5EF; padding:9px 16px; border-radius:999px; font-size:12.5px;
+    opacity:0; pointer-events:none; transition:opacity .2s,transform .2s; z-index:50; max-width:90vw;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .dirty{color:var(--warn); font-size:11.5px}
+  .restart-bar{
+    display:flex; align-items:center; gap:12px; margin-bottom:16px;
+    padding:10px 14px; border:1px solid var(--accent-line); background:var(--accent-soft);
+    border-radius:var(--radius-sm); font-size:12.5px; color:var(--accent);
+  }
+  .restart-bar[hidden]{display:none}
+  .restart-bar .spacer{flex:1}
+  @media(max-width:820px){
+    .shell{grid-template-columns:1fr}
+    aside{position:static; height:auto; border-right:0; border-bottom:1px solid var(--border); padding:16px}
+    nav{flex-direction:row; flex-wrap:wrap; gap:6px}
+    main{padding:20px 16px 60px}
+    .bar-row{grid-template-columns:110px minmax(0,1fr) 74px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <div class="brand">
+      <div class="mark">鱼</div>
+      <div><b>小鱼</b><span>CONTROL PANEL</span></div>
+    </div>
+    <nav>
+      <a href="#overview" class="on"><i class="dot"></i>概览</a>
+      <a href="#health"><i class="dot"></i>自检</a>
+      <a href="#audit"><i class="dot"></i>活人感体检</a>
+      <a href="#sessions"><i class="dot"></i>会话</a>
+      <a href="#context"><i class="dot"></i>上下文</a>
+      <a href="#model"><i class="dot"></i>模型与推理</a>
+      <a href="#tools"><i class="dot"></i>工具开关</a>
+      <a href="#prompt"><i class="dot"></i>仿真层提示词</a>
+      <a href="#role"><i class="dot"></i>人格卡</a>
+      <a href="#backups"><i class="dot"></i>备份与回滚</a>
+      <a href="#logs"><i class="dot"></i>运行日志</a>
+      <a href="#power"><i class="dot"></i>暂停与停止</a>
+    </nav>
+    <div class="side-foot">
+      <div id="conn" class="pill">连接中…</div>
+      <div style="margin-top:9px">改动立即写入文件<br>写入前自动备份</div>
+      <div style="margin-top:9px"><a href="/simple" style="color:var(--muted);text-decoration:none;border-bottom:1px dotted var(--border-strong)">切到简单版 →</a></div>
+    </div>
+  </aside>
+
+  <main>
+    <header class="top">
+      <h1>控制面板</h1>
+      <p class="sub">实时修改运行参数。每次保存都会在源文件旁生成一份带时间戳的备份。</p>
+    </header>
+
+    <div class="restart-bar" id="restartBar" hidden>
+      <span>有改动需要重启才会应用到运行中的进程</span>
+      <span class="spacer"></span>
+      <button class="primary" id="restartNow">立即重启全套</button>
+      <button class="ghost" id="restartDismiss">稍后</button>
+    </div>
+
+    <!-- 概览 -->
+    <section class="card" id="overview">
+      <div class="card-head">
+        <div><h2>上下文用量</h2><p class="hint">每条会话最近一轮的 token 数，对比当前上限。</p></div>
+        <button class="ghost" id="refresh">刷新</button>
+      </div>
+      <div class="meta">
+        <span>上限 <b id="mLimit">—</b></span>
+        <span>会话 <b id="mCount">—</b></span>
+        <span>最高 <b id="mPeak">—</b></span>
+        <span>表情 <b id="mStickers">—</b></span>
+        <span>黑话 <b id="mSlang">—</b></span>
+        <span>本子 <b id="mNotes">—</b></span>
+      </div>
+      <div class="bars" id="bars"><p class="hint">加载中…</p></div>
+    </section>
+
+    <!-- 自检 -->
+    <section class="card" id="health">
+      <div class="card-head">
+        <div><h2>自检</h2><p class="hint">核对运行链路是否一致；能修的直接给按钮。</p></div>
+        <button id="runCheck">运行自检</button>
+      </div>
+      <div class="checks" id="checkList"><p class="hint">点「运行自检」开始。</p></div>
+    </section>
+
+    <!-- 体检 -->
+    <section class="card" id="audit">
+      <div class="card-head">
+        <div><h2>活人感体检</h2><p class="hint">七个维度打分，总分 100。改动后跑一次对比。</p></div>
+        <div class="row">
+          <span class="score" id="auditScore">—<small>/100</small></span>
+          <button class="primary" id="runAudit">运行体检</button>
+        </div>
+      </div>
+      <div class="dims" id="auditDims"><p class="hint">还没跑过，点右上角运行。</p></div>
+      <div class="trend" id="auditTrend" hidden>
+        <div class="cap">历史总分</div>
+        <svg viewBox="0 0 600 52" preserveAspectRatio="none" aria-label="体检总分趋势"></svg>
+      </div>
+    </section>
+
+    <!-- 会话 -->
+    <section class="card" id="sessions">
+      <div class="card-head">
+        <div><h2>会话</h2><p class="hint">单独重置某个会话，或看它重置前存进本子的记忆。</p></div>
+        <button class="ghost" id="reloadSessions">刷新</button>
+      </div>
+      <div class="sess" id="sessList"><p class="hint">加载中…</p></div>
+      <pre class="nb" id="nbView" hidden></pre>
+    </section>
+
+    <!-- 上下文 -->
+    <section class="card" id="context">
+      <div class="card-head">
+        <div><h2>上下文上限</h2><p class="hint">超过这个 token 数，守护进程会把最近 30 条聊天存进笔记本，然后重置会话。</p></div>
+      </div>
+      <div class="row">
+        <input type="range" id="ctxRange" min="20000" max="300000" step="5000">
+        <input type="number" id="ctxNum" min="10000" max="1000000" step="1000">
+        <button class="primary" id="ctxSave">保存</button>
+      </div>
+      <p class="hint" style="margin-top:12px">
+        基线约 27K（提示词 + 人格卡 + 工具定义）。设 50K 大约留 23K 给对话。
+      </p>
+    </section>
+
+    <!-- 模型 -->
+    <section class="card" id="model">
+      <div class="card-head">
+        <div><h2>模型与推理强度</h2><p class="hint">改完需要重启桥接才会应用到已有会话。</p></div>
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <span style="font-size:12px;color:var(--muted);width:64px">推理档位</span>
+        <div class="seg" id="effortSeg">
+          <button data-v="none">none</button>
+          <button data-v="low">low</button>
+          <button data-v="medium">medium</button>
+          <button data-v="high">high</button>
+          <button data-v="max">max</button>
+        </div>
+      </div>
+      <div class="row">
+        <span style="font-size:12px;color:var(--muted);width:64px">模型</span>
+        <input type="text" id="modelInput" style="width:320px">
+        <button id="modelSave">保存</button>
+      </div>
+    </section>
+
+    <!-- 工具 -->
+    <section class="card" id="tools">
+      <div class="card-head">
+        <div><h2>工具开关</h2><p class="hint">关闭的工具不会注册，描述也不进上下文。改完需重启 DSH 才刷新。</p></div>
+        <span class="pill" id="toolCount">—</span>
+      </div>
+      <div id="toolGrid"></div>
+    </section>
+
+    <!-- 提示词 -->
+    <section class="card" id="prompt">
+      <div class="card-head">
+        <div><h2>仿真层提示词</h2><p class="hint">agent.cordis.yml 的 prefix 块。保存后自动重建 patch。</p></div>
+        <span class="dirty" id="promptDirty"></span>
+      </div>
+      <textarea id="promptBox" spellcheck="false"></textarea>
+      <div class="row" style="margin-top:12px">
+        <span class="hint" id="promptCount" style="margin:0"></span>
+        <span class="spacer"></span>
+        <button class="ghost" id="promptReset">放弃修改</button>
+        <button class="primary" id="promptSave">保存并重建</button>
+      </div>
+    </section>
+
+    <!-- 人格卡 -->
+    <section class="card" id="role">
+      <div class="card-head">
+        <div><h2>人格卡</h2><p class="hint">roles/小鱼.md，每条消息都会注入。</p></div>
+        <span class="dirty" id="roleDirty"></span>
+      </div>
+      <textarea id="roleBox" spellcheck="false"></textarea>
+      <div class="row" style="margin-top:12px">
+        <span class="hint" id="roleCount" style="margin:0"></span>
+        <span class="spacer"></span>
+        <button class="ghost" id="roleReset">放弃修改</button>
+        <button class="primary" id="roleSave">保存</button>
+      </div>
+    </section>
+
+    <!-- 备份 -->
+    <section class="card" id="backups">
+      <div class="card-head">
+        <div><h2>备份与回滚</h2><p class="hint">面板每次写入都会留一份。恢复前会自动再存一份当前状态。</p></div>
+        <button class="ghost" id="reloadBackups">刷新</button>
+      </div>
+      <div id="bkList"><p class="hint">加载中…</p></div>
+    </section>
+
+    <!-- 日志 -->
+    <section class="card" id="logs">
+      <div class="card-head">
+        <div><h2>运行日志</h2><p class="hint">最近若干行，3 秒自动刷新。</p></div>
+        <div class="row">
+          <button id="restartBridge">重启桥接</button>
+          <button id="restartAll">重启全套</button>
+        </div>
+      </div>
+      <div class="cat">守护进程</div>
+      <pre class="log" id="gLog">—</pre>
+      <div class="cat">桥接</div>
+      <pre class="log" id="bLog">—</pre>
+    </section>
+
+    <!-- 暂停与停止 -->
+    <section class="card" id="power">
+      <div class="card-head">
+        <div><h2>暂停与停止</h2><p class="hint">暂停只闭麦，不关程序；全部停止会连管家一起关。</p></div>
+      </div>
+      <div class="row" style="margin-bottom:16px">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:13px">在 QQ 发消息</div>
+          <div class="hint" id="pauseState" style="margin:3px 0 0">读取中…</div>
+        </div>
+        <button class="primary" id="pauseBtn" disabled>—</button>
+      </div>
+      <div class="row">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:13px">全部服务</div>
+          <div class="hint" id="svcState" style="margin:3px 0 0">读取中…</div>
+        </div>
+        <button class="primary" id="stopAllBtn" style="background:var(--bad);border-color:var(--bad)">全部停止</button>
+        <button id="startAllBtn">全部启动</button>
+      </div>
+      <p class="hint" style="margin-top:12px">
+        「全部停止」按顺序关：管家 → 聊天循环 → 桥接。只关这三样，QQ 客户端和 SnowLuma 不动。
+      </p>
+    </section>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let S = null;
+  let promptDirty = false, roleDirty = false;
+
+  function toast(msg, bad) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.style.background = bad ? '#7A2E28' : '#26251F';
+    t.classList.add('show');
+    clearTimeout(t._h);
+    t._h = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+  const fmt = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : String(n);
+
+  async function api(path, opt) {
+    const r = await fetch(path, opt);
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
+    return r.json();
+  }
+  async function save(payload, okMsg) {
+    try {
+      const r = await api('/api/save', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      toast(okMsg || '已保存');
+      await load();
+      return r;
+    } catch (e) {
+      toast('保存失败：' + e.message, true);
+      throw e;
+    }
+  }
+
+  function renderBars(sessions, limit) {
+    const box = $('bars');
+    if (!sessions.length) { box.innerHTML = '<p class="hint">还没有会话记录。</p>'; return; }
+    box.innerHTML = '';
+    for (const s of sessions.slice(0, 10)) {
+      const pct = limit ? Math.min(100, (s.tokens / limit) * 100) : 0;
+      const cls = pct > 85 ? 'bad' : pct > 60 ? 'warn' : '';
+      const row = document.createElement('div');
+      row.className = 'bar-row' + (s.live ? '' : ' stale');
+      row.innerHTML =
+        '<div class="bar-key" title="' + s.key + '">' + s.key +
+          (s.live ? '' : '<span class="stale">已退役</span>') + '</div>' +
+        '<div class="track"><div class="fill ' + cls + '" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+        '<div class="bar-val">' + fmt(s.tokens) + '</div>';
+      box.appendChild(row);
+    }
+  }
+
+  function renderTools(tools, meta) {
+    const grid = $('toolGrid');
+    grid.innerHTML = '';
+    const cats = ['基础', '媒体', '记忆', '其他'];
+    let on = 0, total = 0;
+    for (const cat of cats) {
+      const items = meta.filter((m) => m.cat === cat);
+      if (!items.length) continue;
+      const h = document.createElement('div');
+      h.className = 'cat';
+      h.textContent = cat;
+      grid.appendChild(h);
+      const wrap = document.createElement('div');
+      wrap.className = 'tools';
+      for (const m of items) {
+        const isOn = tools[m.flag] !== false;
+        total++; if (isOn) on++;
+        const el = document.createElement('div');
+        el.className = 'tool ' + (isOn ? 'on' : 'off');
+        el.innerHTML = '<div class="nm">' + m.label + '<small>' + m.flag + '</small></div><div class="sw"></div>';
+        el.onclick = async () => {
+          el.classList.toggle('on'); el.classList.toggle('off');
+          const next = el.classList.contains('on');
+          try {
+            await api('/api/save', {
+              method: 'POST', headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ field: 'tool', flag: m.flag, value: next }),
+            });
+            toast((next ? '已开启 ' : '已关闭 ') + m.label);
+            await load();
+            needRestart(true);
+          } catch (e) {
+            el.classList.toggle('on'); el.classList.toggle('off');
+            toast('保存失败：' + e.message, true);
+          }
+        };
+        wrap.appendChild(el);
+      }
+      grid.appendChild(wrap);
+    }
+    $('toolCount').textContent = on + ' / ' + total + ' 开启';
+  }
+
+  function renderEffort(v) {
+    [...$('effortSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+  }
+
+  const sig = { bars: '', tools: '', g: '', b: '' };
+
+  function setLog(id, text) {
+    const el = $(id);
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 12;
+    el.textContent = text || '—';
+    if (atBottom) el.scrollTop = el.scrollHeight;
+  }
+
+  function needRestart(on) {
+    $('restartBar').hidden = !on;
+  }
+
+  async function runCheck() {
+    const box = $('checkList');
+    box.innerHTML = '<p class="hint">检查中…</p>';
+    let d;
+    try { d = await api('/api/selfcheck'); }
+    catch (e) { box.innerHTML = '<p class="hint">自检失败：' + e.message + '</p>'; return; }
+    box.innerHTML = '';
+    for (const c of d.checks) {
+      const row = document.createElement('div');
+      row.className = 'chk ' + (c.ok ? 'ok' : 'bad');
+      row.innerHTML = '<span class="dot"></span><span class="lbl">' + c.label +
+        '</span><span class="det">' + (c.detail || '') + '</span>';
+      if (!c.ok && c.fix) {
+        const b = document.createElement('button');
+        b.textContent = c.fix === 'restart-all' ? '重启全套' : '重启桥接';
+        b.onclick = async () => {
+          b.disabled = true;
+          b.textContent = '修复中…';
+          try {
+            await api('/api/fix', {
+              method: 'POST', headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ action: c.fix }),
+            });
+            toast('已执行修复，重新检查…');
+          } catch (e) { toast('修复失败：' + e.message, true); }
+          runCheck();
+        };
+        row.appendChild(b);
+      }
+      box.appendChild(row);
+    }
+    const bad = d.checks.filter((c) => !c.ok).length;
+    toast(bad ? bad + ' 项异常' : '全部正常', bad > 0);
+  }
+
+  // ── 体检 ──
+  const DIM_ORDER = ['条数分布', '长度参差', '短回复占比', '表情使用', '复读控制', '句式多样', '响应延迟'];
+
+  function renderTrend(h) {
+    const wrap = $('auditTrend');
+    const svg = wrap.querySelector('svg');
+    const cap = wrap.querySelector('.cap');
+    if (!h || h.length < 2) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    const W = 600, H = 52, pad = 5;
+    const vals = h.map((x) => x.total);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const span = max - min;
+    cap.textContent = '历史总分 · ' + vals.length + ' 次 · ' + min + (span ? '–' + max : '（无变化）');
+    const pts = vals.map((v, i) => {
+      const x = pad + (W - pad * 2) * (i / Math.max(1, vals.length - 1));
+      // 所有分数相同（span=0）时画在中线，避免贴底像边框
+      const y = span === 0 ? H / 2 : H - pad - (H - pad * 2) * ((v - min) / span);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    const last = pts.split(' ').pop().split(',');
+    svg.innerHTML =
+      '<polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="1.6" ' +
+      'vector-effect="non-scaling-stroke" stroke-linejoin="round"/>' +
+      '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.4" fill="var(--accent)"/>';
+  }
+
+  function renderAudit(a, history) {
+    if (!a) return;
+    $('auditScore').innerHTML = a.total + '<small>/100</small>';
+    const box = $('auditDims');
+    box.innerHTML = '';
+    // 分会话分数：华南和猫窝的风格要求不一样，合并算会把差异抹平（2026-11-02 起分开算）
+    if (Array.isArray(a.sessions) && a.sessions.length) {
+      const head = document.createElement('p');
+      head.className = 'hint';
+      head.style.margin = '0 0 8px';
+      head.textContent = '各会话：' + a.sessions.map((s) =>
+        s.name + ' ' + (s.insufficient ? '样本不足' : s.total + ' 分')).join(' ｜ ');
+      box.appendChild(head);
+    }
+    for (const k of DIM_ORDER) {
+      const v = a.dims[k];
+      if (v === undefined) continue;
+      const cls = v >= 80 ? '' : v >= 50 ? 'warn' : 'bad';
+      const row = document.createElement('div');
+      row.className = 'dim';
+      row.innerHTML = '<span class="n">' + k + '</span>' +
+        '<div class="track"><div class="fill ' + cls + '" style="width:' + v + '%"></div></div>' +
+        '<span class="v">' + v + '</span>';
+      box.appendChild(row);
+    }
+    const meta = document.createElement('p');
+    meta.className = 'hint';
+    meta.style.margin = '12px 0 0';
+    meta.textContent = '样本 ' + a.samples + ' 次回复 / ' + a.messages + ' 条消息' +
+      (a.sessions && a.sessions.length ? '（来自 ' + a.sessions.length + ' 个会话）' : '') +
+      ' · 两连发 ' + a.dist2 + '% · ≤4字 ' + a.short + '% · 表情 ' + a.media +
+      '% · 机械句式 ' + a.meta + '% · 延迟 ' + a.delay + 's' +
+      (a.repeat && a.repeat !== '无' ? ' · 复读 ' + a.repeat : '');
+    box.appendChild(meta);
+    renderTrend(history || []);
+  }
+
+  async function doAudit() {
+    const btn = $('runAudit');
+    btn.disabled = true;
+    btn.textContent = '体检中…';
+    try {
+      const d = await api('/api/audit');
+      if (!d.ok) toast('体检失败：' + String(d.raw || '').slice(0, 60), true);
+      else { renderAudit(d.audit, d.history); toast('体检完成：' + d.audit.total + ' 分'); }
+    } catch (e) { toast('体检失败：' + e.message, true); }
+    btn.disabled = false;
+    btn.textContent = '运行体检';
+  }
+
+  // ── 会话 ──
+  function renderSessions(list) {
+    const box = $('sessList');
+    const live = (list || []).filter((s) => s.live);
+    if (!live.length) { box.innerHTML = '<p class="hint">没有活跃会话。</p>'; return; }
+    box.innerHTML = '';
+    for (const s of live) {
+      const row = document.createElement('div');
+      row.className = 'sess-row';
+      row.innerHTML = '<span class="k">' + s.key + '</span><span class="t">' + fmt(s.tokens) + '</span><span class="sp"></span>';
+      const b1 = document.createElement('button');
+      b1.textContent = '看本子';
+      b1.onclick = async () => {
+        const d = await api('/api/notebook?key=' + encodeURIComponent(s.key));
+        const v = $('nbView');
+        v.hidden = false;
+        v.textContent = d.exists ? d.text : '（这个会话还没有本子）';
+      };
+      const b2 = document.createElement('button');
+      b2.textContent = '重置';
+      b2.onclick = async () => {
+        b2.disabled = true;
+        try {
+          await api('/api/session/reset', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ key: s.key }),
+          });
+          toast('已重置 ' + s.key);
+          load();
+        } catch (e) { toast('重置失败：' + e.message, true); }
+        b2.disabled = false;
+      };
+      row.appendChild(b1);
+      row.appendChild(b2);
+      box.appendChild(row);
+    }
+  }
+
+  // ── 备份 ──
+  async function loadBackups() {
+    let d;
+    try { d = await api('/api/backups'); }
+    catch (e) { $('bkList').innerHTML = '<p class="hint">读取失败：' + e.message + '</p>'; return; }
+    const box = $('bkList');
+    box.innerHTML = '';
+    for (const t of d.targets) {
+      if (!t.items.length) continue;
+      const h = document.createElement('div');
+      h.className = 'cat';
+      h.textContent = t.label;
+      box.appendChild(h);
+      const wrap = document.createElement('div');
+      wrap.className = 'bk';
+      for (const it of t.items.slice(0, 3)) {
+        const dt = new Date(it.mtime);
+        const pad2 = (n) => String(n).padStart(2, '0');
+        const row = document.createElement('div');
+        row.className = 'bk-row';
+        row.innerHTML = '<span class="nm" title="' + it.name + '">' + it.name + '</span>' +
+          '<span class="sz">' + (dt.getMonth() + 1) + '-' + pad2(dt.getDate()) + ' ' +
+          pad2(dt.getHours()) + ':' + pad2(dt.getMinutes()) + '</span>';
+        const b = document.createElement('button');
+        b.textContent = '恢复';
+        b.onclick = async () => {
+          b.disabled = true;
+          try {
+            await api('/api/restore', {
+              method: 'POST', headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ file: t.id, name: it.name }),
+            });
+            toast('已恢复 ' + t.label);
+            load();
+            loadBackups();
+          } catch (e) { toast('恢复失败：' + e.message, true); b.disabled = false; }
+        };
+        row.appendChild(b);
+        wrap.appendChild(row);
+      }
+      box.appendChild(wrap);
+    }
+  }
+
+  async function loadAssets() {
+    try {
+      const a = await api('/api/assets');
+      $('mStickers').textContent = a.stickers;
+      $('mSlang').textContent = a.slang + ' / ' + (a.slangCap || '?');
+      $('mSlang').title = `已确认 ${a.slangConfirmed} 条`;
+      $('mNotes').textContent = a.notebooks.length;
+    } catch {}
+  }
+
+  async function load() {
+    let d;
+    try { d = await api('/api/state'); }
+    catch (e) { $('conn').className = 'pill bad'; $('conn').textContent = '服务未连接'; return; }
+    S = d;
+    $('conn').className = 'pill ok'; $('conn').textContent = '已连接';
+
+    const limit = d.ctxLimit || 0;
+    $('mLimit').textContent = limit ? fmt(limit) : '—';
+    $('mCount').textContent = d.sessions.length;
+    $('mPeak').textContent = d.sessions.length ? fmt(d.sessions[0].tokens) : '—';
+
+    // 只重绘真正变化的区块，避免每 3 秒重建 DOM 吞掉点击
+    const barsKey = JSON.stringify(d.sessions) + '|' + limit;
+    if (barsKey !== sig.bars) { sig.bars = barsKey; renderBars(d.sessions, limit); renderSessions(d.sessions); }
+
+    if (document.activeElement !== $('ctxNum')) $('ctxNum').value = limit;
+    if (document.activeElement !== $('ctxRange')) $('ctxRange').value = Math.min(300000, limit || 50000);
+
+    renderEffort(d.effort);
+    if (document.activeElement !== $('modelInput')) $('modelInput').value = d.model || '';
+
+    const toolsKey = JSON.stringify(d.tools || {});
+    if (toolsKey !== sig.tools) { sig.tools = toolsKey; renderTools(d.tools || {}, d.toolFlags || []); }
+
+    if (!promptDirty && document.activeElement !== $('promptBox')) {
+      $('promptBox').value = d.prompt || '';
+      $('promptCount').textContent = (d.prompt || '').length + ' 字符';
+      $('promptDirty').textContent = '';
+    }
+    if (!roleDirty && document.activeElement !== $('roleBox')) {
+      $('roleBox').value = d.role || '';
+      $('roleCount').textContent = (d.role || '').length + ' 字符';
+      $('roleDirty').textContent = '';
+    }
+
+    const gText = (d.logs.guardian || []).join('\n');
+    if (gText !== sig.g) { sig.g = gText; setLog('gLog', gText); }
+    const bText = (d.logs.bridge || []).join('\n');
+    if (bText !== sig.b) { sig.b = bText; setLog('bLog', bText); }
+  }
+
+  // ── 事件 ──
+  $('refresh').onclick = () => load().then(() => toast('已刷新'));
+  $('runCheck').onclick = () => runCheck();
+  $('runAudit').onclick = () => doAudit();
+  $('reloadSessions').onclick = () => load().then(() => toast('已刷新'));
+  $('reloadBackups').onclick = () => loadBackups().then(() => toast('已刷新'));
+  $('ctxRange').oninput = (e) => { $('ctxNum').value = e.target.value; };
+  $('ctxNum').oninput = (e) => { $('ctxRange').value = Math.min(300000, Number(e.target.value) || 50000); };
+  $('ctxSave').onclick = () => save({ field: 'ctxLimit', value: Number($('ctxNum').value) }, '上限已保存');
+
+  $('effortSeg').onclick = (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    save({ field: 'effort', value: b.dataset.v }, '推理档位已保存').then(() => needRestart(true));
+  };
+  $('modelSave').onclick = () => {
+    save({ field: 'model', value: $('modelInput').value.trim() }, '模型已保存').then(() => needRestart(true));
+  };
+
+  $('promptBox').oninput = () => {
+    promptDirty = true;
+    $('promptDirty').textContent = '未保存';
+    $('promptCount').textContent = $('promptBox').value.length + ' 字符';
+  };
+  $('promptSave').onclick = async () => {
+    await save({ field: 'prompt', value: $('promptBox').value }, '提示词已保存并重建 patch');
+    promptDirty = false; $('promptDirty').textContent = '';
+    needRestart(true);
+  };
+  $('promptReset').onclick = () => { promptDirty = false; $('promptDirty').textContent = ''; load(); };
+
+  $('roleBox').oninput = () => {
+    roleDirty = true;
+    $('roleDirty').textContent = '未保存';
+    $('roleCount').textContent = $('roleBox').value.length + ' 字符';
+  };
+  $('roleSave').onclick = async () => {
+    await save({ field: 'role', value: $('roleBox').value }, '人格卡已保存');
+    roleDirty = false; $('roleDirty').textContent = '';
+  };
+  $('roleReset').onclick = () => { roleDirty = false; $('roleDirty').textContent = ''; load(); };
+
+  $('restartDismiss').onclick = () => needRestart(false);
+  $('restartNow').onclick = async () => {
+    toast('正在重启 DSH + 桥接，约 40 秒…');
+    try {
+      await api('/api/restart', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"target":"all"}' });
+      needRestart(false);
+      toast('全套已重启');
+      load();
+    } catch (e) { toast('重启失败：' + e.message, true); }
+  };
+
+  $('restartBridge').onclick = async () => {
+    toast('正在重启桥接…');
+    try { await api('/api/restart', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"target":"bridge"}' }); toast('桥接已重启'); load(); }
+    catch (e) { toast('重启失败：' + e.message, true); }
+  };
+  $('restartAll').onclick = async () => {
+    toast('正在重启 DSH + 桥接，约 40 秒…');
+    try { await api('/api/restart', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"target":"all"}' }); toast('全套已重启'); load(); }
+    catch (e) { toast('重启失败：' + e.message, true); }
+  };
+
+  // ── 暂停与停止 ──
+  let armed = false, armTimer = null;
+
+  function renderPower(p) {
+    const running = p.bridgeRunning === true;
+    const paused = p.paused === true;
+    const ps = $('pauseState') || $('power').querySelector('.hint');
+    const pb = $('pauseBtn');
+    pb.disabled = !running;
+    if (!running) {
+      ps.textContent = '聊天程序没在跑';
+      pb.textContent = '不可用';
+    } else if (paused) {
+      ps.textContent = '已暂停 —— 在看群，但不会说话';
+      pb.textContent = '恢复发送';
+    } else {
+      ps.textContent = '正常发送中';
+      pb.textContent = '暂停发送';
+    }
+    $('svcState').textContent = running ? '聊天在跑' : '聊天已停';
+    $('startAllBtn').disabled = running;
+  }
+
+  async function loadPower() {
+    try { renderPower(await api('/api/power')); } catch {}
+  }
+
+  $('pauseBtn').onclick = async () => {
+    const b = $('pauseBtn');
+    const cur = await api('/api/power');
+    const next = cur.paused !== true;
+    b.disabled = true;
+    try { await post('/api/pause', { paused: next }); toast(next ? '已暂停发送' : '已恢复发送'); await loadPower(); load(); }
+    catch (e) { toast('操作失败：' + e.message, true); }
+    b.disabled = false;
+  };
+
+  $('stopAllBtn').onclick = async () => {
+    const b = $('stopAllBtn');
+    if (!armed) {
+      armed = true;
+      b.textContent = '再点一次确认';
+      clearTimeout(armTimer);
+      armTimer = setTimeout(() => { armed = false; b.textContent = '全部停止'; }, 5000);
+      return;
+    }
+    armed = false;
+    clearTimeout(armTimer);
+    b.textContent = '全部停止';
+    b.disabled = true;
+    try {
+      const r = await post('/api/shutdown', {});
+      toast(r.ok ? '已全部停止' : '停止时有异常', !r.ok);
+      await loadPower();
+    } catch (e) { toast('停止失败：' + e.message, true); }
+    b.disabled = false;
+  };
+
+  $('startAllBtn').onclick = async () => {
+    const b = $('startAllBtn');
+    b.disabled = true;
+    try {
+      await post('/api/startup', {});
+      toast('已启动，约 10 秒后恢复');
+      setTimeout(() => { loadPower(); load(); }, 9000);
+    } catch (e) { toast('启动失败：' + e.message, true); b.disabled = false; }
+  };
+
+  // 导航高亮
+  const links = [...document.querySelectorAll('nav a')];
+  const obs = new IntersectionObserver((es) => {
+    for (const en of es) if (en.isIntersecting) {
+      links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + en.target.id));
+    }
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  document.querySelectorAll('main section').forEach((s) => obs.observe(s));
+
+  load();
+  loadBackups();
+  loadAssets();
+  loadPower();
+  api('/api/audit/history').then((d) => renderTrend(d.history)).catch(() => {});
+  setInterval(() => { load(); loadPower(); }, 3000);
+})();
+</script>
+</body>
+</html>

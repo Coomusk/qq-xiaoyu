@@ -1,0 +1,45 @@
+name: 功能建议
+description: 想要新的行为、新的工具、新的人设机制
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到的是什么问题
+      description: 先讲场景，不要直接讲方案
+      placeholder: 群里有人半夜刷屏时，她会一条条接，看起来很假……
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你希望的方案
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: 属于哪一块
+      options:
+        - 人味（拆条 / 作息 / 记忆 / 人格）
+        - 工具面（agent 能做什么）
+        - 控制台
+        - 成本与性能
+        - 安全
+        - 文档
+        - 说不清
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 你考虑过的替代方案
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 自查
+      options:
+        - label: 我搜过 issue，没有重复
+          required: true

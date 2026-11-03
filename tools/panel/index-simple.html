@@ -1,0 +1,1289 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小鱼 · 简单版</title>
+<style>
+  :root{
+    --bg:#FAF9F5; --panel:#FFFFFF; --panel-2:#F5F3EE;
+    --text:#1F1E1D; --muted:#6B6862; --faint:#9A968E;
+    --border:#E5E2D9; --border-strong:#D6D2C6;
+    --accent:#C96442; --accent-soft:#F7EDE8; --accent-line:#E8CFC3;
+    --ok:#3F7D5A; --warn:#B4762A; --bad:#B4433A;
+    --radius:14px; --radius-sm:9px;
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Code",Consolas,monospace;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Songti SC",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.65; -webkit-font-smoothing:antialiased}
+  .shell{display:grid; grid-template-columns:216px minmax(0,1fr); min-height:100vh}
+
+  aside{border-right:1px solid var(--border); padding:20px 12px; position:sticky; top:0; height:100vh; overflow:auto}
+  .brand{display:flex; align-items:center; gap:9px; padding:0 8px 16px}
+  .mark{width:26px;height:26px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:#fff;font-family:var(--serif);font-size:13px;flex:none}
+  .brand b{font-family:var(--serif); font-size:15px}
+  .brand span{display:block; font-size:10.5px; color:var(--faint); letter-spacing:.5px}
+  nav{display:flex; flex-direction:column; gap:1px}
+  nav button{
+    display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+    padding:8px 10px; border:0; border-radius:var(--radius-sm); background:transparent;
+    color:var(--muted); font-family:inherit; font-size:13px; cursor:pointer;
+  }
+  nav button:hover{background:var(--panel-2); color:var(--text)}
+  nav button.on{background:var(--accent-soft); color:var(--accent); font-weight:500}
+  nav button i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.4;flex:none}
+  .foot{margin-top:18px; padding:11px 10px; border-top:1px solid var(--border); font-size:11px; color:var(--faint); line-height:1.7}
+  .dot-conn{display:inline-flex; align-items:center; gap:5px}
+  .dot-conn b{width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block}
+  .dot-conn.bad b{background:var(--bad)}
+  .dot-conn.muted b{background:var(--faint)}
+  .dot-conn.muted{color:var(--faint)}
+
+  main{padding:34px 40px 60px; max-width:820px}
+  h1{font-family:var(--serif); font-size:25px; font-weight:600; margin:0 0 14px; letter-spacing:-.2px}
+  .plain{
+    background:var(--accent-soft); border:1px solid var(--accent-line);
+    border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:22px;
+    font-size:13.5px; line-height:1.85; color:#6B4A3C;
+  }
+  .plain b{color:var(--accent); font-weight:600}
+  .plain p{margin:0}
+  .plain p + p{margin-top:8px}
+
+  .box{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px}
+  .box + .box{margin-top:14px}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .spacer{flex:1}
+  .label{font-size:12.5px; color:var(--muted); min-width:66px}
+
+  input[type=number],input[type=text],textarea{
+    font-family:inherit; font-size:13px; color:var(--text); background:var(--panel);
+    border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 11px; outline:none;
+  }
+  input:focus,textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+  input[type=number]{width:120px; font-variant-numeric:tabular-nums}
+  input[type=range]{flex:1; min-width:180px; accent-color:var(--accent)}
+  textarea{width:100%; resize:vertical; line-height:1.8; font-family:var(--mono); font-size:12.5px; background:#FCFBF8}
+  #promptBox{height:420px}
+  #roleBox{height:380px; font-family:var(--sans); font-size:13px; line-height:1.95}
+
+  button{font-family:inherit; font-size:13px; cursor:pointer; border-radius:var(--radius-sm); padding:7px 14px; border:1px solid var(--border-strong); background:var(--panel); color:var(--text)}
+  button:hover{background:var(--panel-2)}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  button.primary:hover{filter:brightness(.95); background:var(--accent)}
+  button.danger{background:var(--bad); border-color:var(--bad); color:#fff}
+  button.danger:hover{filter:brightness(.95)}
+  button.danger.arm{background:#8E2F27; border-color:#8E2F27}
+  button.ghost{border-color:transparent; background:transparent; color:var(--muted)}
+  button.ghost:hover{background:var(--panel-2); color:var(--text)}
+  button:disabled{opacity:.45; cursor:not-allowed}
+  button.sm{padding:4px 10px; font-size:11.5px}
+  .seg{display:inline-flex; border:1px solid var(--border-strong); border-radius:var(--radius-sm); overflow:hidden}
+  .seg button{border:0; border-radius:0; padding:7px 13px; background:var(--panel); color:var(--muted)}
+  .seg button + button{border-left:1px solid var(--border)}
+  .seg button.on{background:var(--accent-soft); color:var(--accent); font-weight:500}
+
+  .bars{display:flex; flex-direction:column; gap:10px}
+  .bar-row{display:grid; grid-template-columns:150px minmax(0,1fr) 78px; gap:12px; align-items:center; font-size:12px}
+  .bar-key{font-family:var(--mono); color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .bar-row.stale{opacity:.5}
+  .bar-row.stale .fill{background:var(--border-strong)}
+  .track{height:7px; border-radius:99px; background:var(--panel-2); overflow:hidden}
+  .fill{height:100%; border-radius:99px; background:var(--accent); transition:width .35s}
+  .fill.warn{background:var(--warn)} .fill.bad{background:var(--bad)}
+  .bar-val{text-align:right; font-variant-numeric:tabular-nums; color:var(--muted)}
+
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px}
+  .stat{border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px}
+  .stat .k{font-size:11.5px; color:var(--faint)}
+  .stat .v{font-family:var(--serif); font-size:22px; font-variant-numeric:tabular-nums; line-height:1.3}
+
+  .checks{display:flex; flex-direction:column; gap:9px}
+  .chk{display:flex; align-items:center; gap:10px; font-size:13px; flex-wrap:wrap}
+  .chk .d{width:7px;height:7px;border-radius:50%;flex:none;background:var(--border-strong)}
+  .chk.ok .d{background:var(--ok)} .chk.bad .d{background:var(--bad)}
+  .chk .l{min-width:170px}
+  .chk .t{color:var(--muted); font-size:12px; flex:1; min-width:120px}
+
+  .score{font-family:var(--serif); font-size:30px; font-variant-numeric:tabular-nums; line-height:1}
+  .score small{font-size:12px; color:var(--faint); margin-left:2px}
+  .dims{display:flex; flex-direction:column; gap:9px; margin-top:16px}
+  .dim{display:grid; grid-template-columns:86px minmax(0,1fr) 40px; gap:10px; align-items:center; font-size:12px}
+  .dim .n{color:var(--muted)} .dim .v{text-align:right; color:var(--muted); font-variant-numeric:tabular-nums}
+
+  .list{display:flex; flex-direction:column; gap:8px}
+  .li{display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12.5px}
+  .li .k{font-family:var(--mono); color:var(--muted); min-width:150px}
+  .li .t{color:var(--faint); font-variant-numeric:tabular-nums}
+  .li .sp{flex:1}
+  pre.pane{margin:10px 0 0; padding:12px 14px; background:#FBFAF6; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:var(--mono); font-size:11.5px; line-height:1.7; color:var(--muted); max-height:320px; overflow:auto; white-space:pre-wrap; word-break:break-all}
+  pre.nb{font-family:var(--sans); font-size:12.5px; line-height:1.9}
+
+  .tools{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px}
+  .tool{display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; user-select:none}
+  .tool:hover{border-color:var(--border-strong); background:#FCFBF8}
+  .tool .nm{flex:1; min-width:0; font-size:12.5px}
+  .tool .nm small{display:block; color:var(--faint); font-size:10.5px; font-family:var(--mono)}
+  .sw{width:32px;height:18px;border-radius:99px;background:var(--border-strong);position:relative;flex:none;transition:background .15s}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+  .tool.on .sw{background:var(--accent)} .tool.on .sw::after{transform:translateX(14px)}
+  .tool.off .nm{color:var(--faint)}
+  .cat{font-size:11px; color:var(--faint); letter-spacing:.6px; margin:16px 0 7px}
+  .cat:first-child{margin-top:0}
+
+  /* 模型选择 */
+  .msearch{width:100%; margin-bottom:12px}
+  .mgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(268px,1fr)); gap:8px; max-height:420px; overflow:auto; padding-right:4px}
+  .mcard{display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; transition:border-color .12s,background .12s}
+  .mcard:hover{border-color:var(--border-strong); background:#FCFBF8}
+  .mcard.on{border-color:var(--accent); background:var(--accent-soft)}
+  .mcard .txt{flex:1; min-width:0}
+  .mcard .nm{font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .mcard .ref{font-size:10.5px; color:var(--faint); font-family:var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .mcard .badge{font-size:10px; color:var(--accent); border:1px solid var(--accent-line); border-radius:999px; padding:1px 7px; flex:none}
+  .mlabel{font-size:11.5px; color:var(--faint); letter-spacing:.5px; margin:14px 0 7px; position:sticky; top:0; background:var(--panel); padding:4px 0; z-index:1}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);background:#26251F;color:#F7F5EF;padding:9px 16px;border-radius:999px;font-size:12.5px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:90vw}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .dirty{color:var(--warn); font-size:11.5px}
+  .note{font-size:11.5px; color:var(--faint); margin-top:10px}
+
+  @media(max-width:820px){
+    .shell{grid-template-columns:1fr}
+    aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border);padding:14px}
+    nav{flex-direction:row;flex-wrap:wrap;gap:5px}
+    nav button{width:auto}
+    main{padding:20px 16px 50px}
+    .bar-row{grid-template-columns:104px minmax(0,1fr) 66px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <div class="brand">
+      <div class="mark">鱼</div>
+      <div><b>小鱼</b><span>简单版</span></div>
+    </div>
+    <nav id="nav">
+      <button data-v="status" class="on"><i></i>一眼看状态</button>
+      <button data-v="health"><i></i>检查身体</button>
+      <button data-v="audit"><i></i>打个分</button>
+      <button data-v="sessions"><i></i>聊天记录</button>
+      <button data-v="inner"><i></i>她在想什么</button>
+      <button data-v="slang"><i></i>黑话本</button>
+      <button data-v="context"><i></i>记忆长度</button>
+      <button data-v="model"><i></i>用哪个脑子</button>
+      <button data-v="tools"><i></i>会哪些动作</button>
+      <button data-v="prompt"><i></i>行为守则</button>
+      <button data-v="role"><i></i>她是谁</button>
+      <button data-v="backups"><i></i>后悔药</button>
+      <button data-v="logs"><i></i>现场记录</button>
+      <button data-v="power"><i></i>暂停与停止</button>
+    </nav>
+    <div class="foot">
+      <span class="dot-conn" id="conn"><b></b>已连接</span>
+      <div style="margin-top:8px"><span class="dot-conn" id="guardian"><b></b>守护心跳 —</span></div>
+      <div style="margin-top:8px">改完自动存盘<br>存盘前会留备份</div>
+      <div style="margin-top:8px"><a href="/" style="color:var(--muted);text-decoration:none;border-bottom:1px dotted var(--border-strong)">切到详细版 →</a></div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- 一眼看状态 -->
+    <section class="view" data-v="status">
+      <h1>一眼看状态</h1>
+      <div class="plain">
+        <p>这是她现在的心跳。<b>上面几个数字</b>是她攒下的家当：会多少表情、懂多少群里的黑话、写了几本笔记。</p>
+        <p><b>下面每一条</b>是她在某个群或私聊里的"记忆"。数字越大，说明她记着的东西越多——但也越慢、越费钱。</p>
+      </div>
+      <div class="box">
+        <div class="stats">
+          <div class="stat"><div class="k">表情</div><div class="v" id="sSticker">—</div></div>
+          <div class="stat"><div class="k">黑话 已用/上限</div><div class="v" id="sSlang">—</div></div>
+          <div class="stat"><div class="k">笔记</div><div class="v" id="sNotes">—</div></div>
+          <div class="stat"><div class="k">记忆上限</div><div class="v" id="sLimit">—</div></div>
+        </div>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:12px">
+          <span class="label" style="min-width:auto;color:var(--text);font-size:13px">各处记忆占用</span>
+          <span class="spacer"></span>
+          <button class="ghost sm" id="refreshStatus">刷新</button>
+        </div>
+        <div class="bars" id="bars"><p class="note">加载中…</p></div>
+      </div>
+    </section>
+
+    <!-- 检查身体 -->
+    <section class="view" data-v="health" hidden>
+      <h1>检查身体</h1>
+      <div class="plain">
+        <p>点一下，程序会自己查一遍：QQ 还连着吗？后台还在跑吗？配置文件有没有写坏？</p>
+        <p><b>绿点</b>是正常，<b>红点</b>是出问题了。能自动修的，右边会出现按钮，点一下就修。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:14px">
+          <span style="font-size:13px">检查结果</span>
+          <span class="spacer"></span>
+          <button class="primary" id="runCheck">开始检查</button>
+        </div>
+        <div class="checks" id="checkList"><p class="note">还没查过。</p></div>
+      </div>
+    </section>
+
+    <!-- 打个分 -->
+    <section class="view" data-v="audit" hidden>
+      <h1>打个分</h1>
+      <div class="plain">
+        <p>让程序读她最近二十多条聊天，<b>按七个方面打分</b>，看她像不像真人。分数越高越像。</p>
+        <p>60 分以下叫「明显机械」。<b>改完东西就跑一次</b>，看分数涨没涨——这是唯一能证明改动有用的办法。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:6px">
+          <span class="score" id="aScore">—<small>/100</small></span>
+          <span class="spacer"></span>
+          <button class="primary" id="runAudit">开始打分</button>
+        </div>
+        <div class="dims" id="aDims"><p class="note">还没打过分。</p></div>
+        <p class="note" id="aMeta"></p>
+      </div>
+    </section>
+
+    <!-- 聊天记录 -->
+    <section class="view" data-v="sessions" hidden>
+      <h1>聊天记录</h1>
+      <div class="plain">
+        <p>她在每个群、每个私聊里各有一个「脑子」。脑子装满了会自动清空，<b>清空前会把最近 30 句存进「本子」</b>，下次醒来先看本子。</p>
+        <p>这里可以单独清空某处，也可以看它清空前存了什么。<b>清空不影响聊天</b>，只是她会暂时"忘事"，然后靠本子接上。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:12px">
+          <span style="font-size:13px">正在用的记忆</span>
+          <span class="spacer"></span>
+          <button class="ghost sm" id="reloadSess">刷新</button>
+        </div>
+        <div class="list" id="sessList"><p class="note">加载中…</p></div>
+        <pre class="pane nb" id="nbView" hidden></pre>
+      </div>
+    </section>
+
+    <!-- 记忆长度 -->
+    <section class="view" data-v="context" hidden>
+      <h1>记忆长度</h1>
+      <div class="plain">
+        <p>这是<b>她能记住多久的对话</b>。数字越大，记得越多，但反应越慢、花钱越多；数字越小，越轻快，但忘得越快。</p>
+        <p>现在设的是 <b id="ctxNow">—</b>。经验值：5 万大概等于"记得最近几十句"，8 万更稳但更慢。</p>
+      </div>
+      <div class="box">
+        <div class="row">
+          <input type="range" id="ctxRange" min="20000" max="200000" step="5000">
+          <input type="number" id="ctxNum" min="10000" max="1000000" step="1000">
+          <button class="primary" id="ctxSave">保存</button>
+        </div>
+        <p class="note">改完立即生效，不用重启。超出上限时，守护进程会自动存档并清空，大约每 5 分钟检查一次。</p>
+      </div>
+    </section>
+
+    <!-- 用哪个脑子 -->
+    <!-- 用哪个脑子 -->
+    <section class="view" data-v="model" hidden>
+      <h1>用哪个脑子</h1>
+      <div class="plain">
+        <p><b>模型</b>是实际驱动她的 AI。点下面任意一个就切换，<b>立刻对所有正在聊的群生效</b>，不用重启。</p>
+        <p><b>认真程度</b>是她想事情多认真。max 会想很久答得很正经；<b>low 更随意、更像随口说话</b>。想让她像人，low 通常更好。</p>
+      </div>
+
+      <div class="box">
+        <div class="row" style="margin-bottom:14px">
+          <div style="flex:1;min-width:140px">
+            <div style="font-size:13px">现在用的</div>
+            <div class="note" id="curModel" style="margin-top:3px">读取中…</div>
+          </div>
+          <button class="ghost sm" id="reloadModels">刷新列表</button>
+        </div>
+
+        <div class="row" style="margin-bottom:12px">
+          <span class="label">认真程度</span>
+          <div class="seg" id="effortSeg">
+            <button data-v="off">off</button>
+            <button data-v="low">low</button>
+            <button data-v="medium">medium</button>
+            <button data-v="high">high</button>
+            <button data-v="max">max</button>
+          </div>
+        </div>
+
+        <input type="text" class="msearch" id="modelSearch" placeholder="搜模型名或 provider…（比如 zen、glm、gpt）">
+        <div id="modelList"><p class="note">加载中…</p></div>
+      </div>
+    </section>
+
+    <!-- 会哪些动作 -->
+    <section class="view" data-v="tools" hidden>
+      <h1>会哪些动作</h1>
+      <div class="plain">
+        <p>这些是她会用的"动作"：发消息、看图、发表情、翻本子……<b>开着的她会用，关掉的她连说明书都看不到</b>——所以关掉不用的能让她更专注、更省钱。</p>
+        <p>但别关太多。<b>关掉看图她就真的看不见图了。</b>改完需要重启。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:6px">
+          <span style="font-size:13px">动作清单</span>
+          <span class="spacer"></span>
+          <span class="note" id="toolCount" style="margin:0">—</span>
+        </div>
+        <div id="toolGrid"></div>
+      </div>
+    </section>
+
+    <!-- 行为守则 -->
+    <section class="view" data-v="prompt" hidden>
+      <h1>行为守则</h1>
+      <div class="plain">
+        <p>这是塞给她看的规则书，<b>每条消息都会带上它</b>。里面写着：怎么说话、什么不该说、工具怎么用。</p>
+        <p>写得越长越费钱，也越容易前后打架。<b>改完记得点保存</b>，保存后要重启才会生效。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:10px">
+          <span class="note" id="promptCount" style="margin:0">—</span>
+          <span class="spacer"></span>
+          <span class="dirty" id="promptDirty"></span>
+        </div>
+        <textarea id="promptBox" spellcheck="false"></textarea>
+        <div class="row" style="margin-top:12px">
+          <button class="ghost" id="promptReset">放弃修改</button>
+          <span class="spacer"></span>
+          <button class="primary" id="promptSave">保存</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 她是谁 -->
+    <section class="view" data-v="role" hidden>
+      <h1>她是谁</h1>
+      <div class="plain">
+        <p>这是人格卡：她的年纪、性格、说话习惯、口癖、底线。<b>这一份最影响"像不像人"</b>，比任何参数都重要。</p>
+        <p>改完直接生效，不用重启。想让她变，先改这里。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:10px">
+          <span class="note" id="roleCount" style="margin:0">—</span>
+          <span class="spacer"></span>
+          <span class="dirty" id="roleDirty"></span>
+        </div>
+        <textarea id="roleBox" spellcheck="false"></textarea>
+        <div class="row" style="margin-top:12px">
+          <button class="ghost" id="roleReset">放弃修改</button>
+          <span class="spacer"></span>
+          <button class="primary" id="roleSave">保存</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 后悔药 -->
+    <section class="view" data-v="backups" hidden>
+      <h1>后悔药</h1>
+      <div class="plain">
+        <p>这个页面每次改东西，都会在改之前<b>自动存一份</b>。改坏了、或者想回到半小时前，就在这里点「恢复」。</p>
+        <p>恢复之前，程序会<b>先把当前的样子再存一份</b>，所以不用担心恢复错。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:12px">
+          <span style="font-size:13px">最近备份</span>
+          <span class="spacer"></span>
+          <button class="ghost sm" id="reloadBackups">刷新</button>
+        </div>
+        <div id="bkList"><p class="note">加载中…</p></div>
+      </div>
+    </section>
+
+    <!-- 现场记录 -->
+    <!-- 她在想什么 -->
+    <section class="view" data-v="inner" hidden>
+      <h1>她在想什么</h1>
+      <div class="plain">
+        <p>她每次醒来看完群里的消息，<b>如果决定这次不说话</b>，当时的完整想法会留在这里。</p>
+        <p>这不是聊天记录，是她的内心：为什么没接话、觉得谁在聊什么、打算继续潜水还是等机会。</p>
+        <p>只有「看了但没开口」才会记。真说了话的回合不在这里。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:12px">
+          <span style="font-size:13px">最近的想法</span>
+          <span class="spacer"></span>
+          <button class="sm" id="ivRefresh">刷新</button>
+        </div>
+        <pre class="pane" id="ivText" style="white-space:pre-wrap">—</pre>
+      </div>
+    </section>
+
+    <!-- 黑话本 -->
+    <section class="view" data-v="slang" hidden>
+      <h1>黑话本</h1>
+      <div class="plain">
+        <p>群里学到的网络用语。<b>只有「已确认」的才会被她拿去用</b>，候选只是记下来了、还没用上。</p>
+        <p><b>降级</b>：从「已确认」退回「候选」——她以后不会再用这个词，但记录保留，想恢复随时点回来。</p>
+        <p><b>删除</b>：彻底删掉，找不回来。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:12px">
+          <span style="font-size:13px">筛选</span>
+          <span class="spacer"></span>
+          <select id="slFilter" class="sm" style="padding:5px 8px">
+            <option value="">全部</option>
+            <option value="confirmed">已确认（在用）</option>
+            <option value="candidate">候选（未用）</option>
+            <option value="rejected">已拒绝</option>
+          </select>
+          <button class="sm" id="slRefresh">刷新</button>
+        </div>
+        <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">
+          <label style="font-size:13px;display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="slAll"> 全选
+          </label>
+          <span class="note" id="slPicked">未选</span>
+          <span class="spacer"></span>
+          <button class="sm" id="slConfirm">批量确认</button>
+          <button class="sm" id="slDemote">批量降级</button>
+          <button class="sm" id="slDelete">批量删除</button>
+        </div>
+        <p class="note" id="slStat">—</p>
+        <div id="slList"></div>
+      </div>
+    </section>
+
+    <!-- 现场记录 -->
+    <section class="view" data-v="logs" hidden>
+      <h1>现场记录</h1>
+      <div class="plain">
+        <p>后台程序自己写的日记。<b>出问题时看这里</b>：重启、报错、清空记忆都会记一笔。</p>
+        <p>上面是「管家」的记录，下面是「聊天」的记录。右边两个按钮是手动重启。</p>
+      </div>
+      <div class="box">
+        <div class="row" style="margin-bottom:12px">
+          <span style="font-size:13px">管家（守护进程）</span>
+          <span class="spacer"></span>
+          <button class="sm" id="restartAll2">全部重启</button>
+        </div>
+        <pre class="pane" id="gLog">—</pre>
+        <div class="row" style="margin:16px 0 12px">
+          <span style="font-size:13px">聊天（桥接）</span>
+          <span class="spacer"></span>
+          <button class="sm" id="restartBridge2">只重启聊天</button>
+        </div>
+        <pre class="pane" id="bLog">—</pre>
+      </div>
+    </section>
+
+    <!-- 暂停与停止 -->
+    <section class="view" data-v="power" hidden>
+      <h1>暂停与停止</h1>
+      <div class="plain">
+        <p><b>暂停发送</b>：她还在看群，但一句话都不说。想临时闭麦就用这个——比如你在群里谈正事，或者她刚说了不合适的话。</p>
+        <p><b>全部停止</b>：把「管家」和「聊天」都关掉，彻底下线。停完这一页还能一键启动，不用开黑框。</p>
+      </div>
+      <div class="box">
+        <div class="row">
+          <div style="flex:1;min-width:160px">
+            <div style="font-size:13px">在 QQ 发消息</div>
+            <div class="note" id="pauseState" style="margin-top:3px">读取中…</div>
+          </div>
+          <button class="primary" id="pauseBtn" disabled>—</button>
+        </div>
+      </div>
+      <div class="box">
+        <div class="row">
+          <div style="flex:1;min-width:160px">
+            <div style="font-size:13px">全部服务</div>
+            <div class="note" id="svcState" style="margin-top:3px">读取中…</div>
+          </div>
+          <button class="danger" id="stopAllBtn">全部停止</button>
+          <button id="startAllBtn">全部启动</button>
+        </div>
+        <p class="note">「全部停止」会先关管家（否则它 15 秒内又把聊天拉回来），再关聊天。QQ 客户端本身不动，SnowLuma 也不动。</p>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="toast"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let S = null, promptDirty = false, roleDirty = false, active = 'status';
+  const fmt = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : String(n);
+
+  function toast(msg, bad) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.style.background = bad ? '#7A2E28' : '#26251F';
+    t.classList.add('show');
+    clearTimeout(t._h);
+    t._h = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+  async function api(p, o) {
+    const r = await fetch(p, o);
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
+    return r.json();
+  }
+  const post = (p, b) => api(p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) });
+
+  // ── 导航 ──
+  function show(v) {
+    const names = [...document.querySelectorAll('.view')].map((el) => el.dataset.v);
+    if (!names.includes(v)) v = 'status';
+    active = v;
+    document.querySelectorAll('.view').forEach((el) => { el.hidden = el.dataset.v !== v; });
+    document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+    try { sessionStorage.setItem('panelView', v); } catch {}
+    if (v === 'health') runCheck();
+    if (v === 'audit') loadAuditHistory();
+    if (v === 'backups') loadBackups();
+    if (v === 'power') loadPower();
+    if (v === 'model') loadModels();
+    if (v === 'inner') loadInnerVoice();
+    if (v === 'slang') loadSlang();
+    window.scrollTo(0, 0);
+  }
+  $('nav').onclick = (e) => {
+    const b = e.target.closest('button');
+    if (b) show(b.dataset.v);
+  };
+
+  // ── 状态 ──
+  function renderBars(list, limit) {
+    const box = $('bars');
+    if (!list.length) { box.innerHTML = '<p class="note">还没有记录。</p>'; return; }
+    box.innerHTML = '';
+    for (const s of list.slice(0, 8)) {
+      const pct = limit ? Math.min(100, (s.tokens / limit) * 100) : 0;
+      const cls = pct > 85 ? 'bad' : pct > 60 ? 'warn' : '';
+      const row = document.createElement('div');
+      row.className = 'bar-row' + (s.live ? '' : ' stale');
+      row.innerHTML = '<div class="bar-key" title="' + s.key + '">' + s.key + '</div>' +
+        '<div class="track"><div class="fill ' + cls + '" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+        '<div class="bar-val">' + fmt(s.tokens) + '</div>';
+      box.appendChild(row);
+    }
+  }
+
+  async function load() {
+    let d;
+    try { d = await api('/api/state'); }
+    catch (e) {
+      $('conn').className = 'dot-conn bad';
+      $('conn').innerHTML = '<b></b>没连上';
+      console.error('[panel] /api/state 失败', e);
+      return;
+    }
+    S = d;
+    try {
+    $('conn').className = 'dot-conn';
+    $('conn').innerHTML = '<b></b>已连接';
+
+    const lim = d.ctxLimit || 0;
+    $('sLimit').textContent = lim ? fmt(lim) : '—';
+    $('ctxNow').textContent = lim ? Number(lim).toLocaleString() : '—';
+    renderBars(d.sessions, lim);
+
+    if (document.activeElement !== $('ctxNum')) $('ctxNum').value = lim;
+    if (document.activeElement !== $('ctxRange')) $('ctxRange').value = Math.min(200000, lim || 50000);
+
+
+    if (!promptDirty && document.activeElement !== $('promptBox')) {
+      $('promptBox').value = d.prompt || '';
+      $('promptCount').textContent = '规则书 ' + (d.prompt || '').length + ' 字';
+      $('promptDirty').textContent = '';
+    }
+    if (!roleDirty && document.activeElement !== $('roleBox')) {
+      $('roleBox').value = d.role || '';
+      $('roleCount').textContent = '人格卡 ' + (d.role || '').length + ' 字';
+      $('roleDirty').textContent = '';
+    }
+
+    $('gLog').textContent = (d.logs.guardian || []).join('\n') || '—';
+    $('bLog').textContent = (d.logs.bridge || []).join('\n') || '—';
+
+    renderTools(d.tools || {}, d.toolFlags || []);
+    renderSessions(d.sessions);
+    } catch (e) {
+      console.error('[panel] load() 渲染失败', e);
+    }
+  }
+
+  // ── 资产 ──
+  async function loadAssets() {
+    try {
+      const a = await api('/api/assets');
+      $('sSticker').textContent = a.stickers;
+      $('sSlang').textContent = a.slang + ' / ' + (a.slangCap || '?');
+      $('sSlang').title = `已确认 ${a.slangConfirmed} 条 · 当前 ${a.slang} 条 · 上限 ${a.slangCap} 条（只有已确认的会进提示词）`;
+      $('sNotes').textContent = a.notebooks.length;
+    } catch {}
+  }
+
+  // ── 检查 ──
+  async function runCheck() {
+    const box = $('checkList');
+    box.innerHTML = '<p class="note">检查中…</p>';
+    let d;
+    try { d = await api('/api/selfcheck'); }
+    catch (e) { box.innerHTML = '<p class="note">检查失败：' + e.message + '</p>'; return; }
+    box.innerHTML = '';
+    for (const c of d.checks) {
+      const row = document.createElement('div');
+      row.className = 'chk ' + (c.ok ? 'ok' : 'bad');
+      row.innerHTML = '<span class="d"></span><span class="l">' + c.label + '</span><span class="t">' + (c.detail || '') + '</span>';
+      if (!c.ok && c.fix) {
+        const b = document.createElement('button');
+        b.className = 'sm';
+        b.textContent = c.fix === 'restart-all' ? '全部重启' : '重启聊天';
+        b.onclick = async () => {
+          b.disabled = true; b.textContent = '修复中…';
+          try { await post('/api/fix', { action: c.fix }); toast('修好了，重新检查'); }
+          catch (e) { toast('修复失败：' + e.message, true); }
+          runCheck();
+        };
+        row.appendChild(b);
+      }
+      box.appendChild(row);
+    }
+    const bad = d.checks.filter((c) => !c.ok).length;
+    toast(bad ? bad + ' 项有问题' : '一切正常', bad > 0);
+  }
+
+  // ── 打分 ──
+  const DIMS = ['条数分布', '长度参差', '短回复占比', '表情使用', '复读控制', '句式多样', '响应延迟'];
+  const DIM_TIP = {
+    条数分布: '一次发几条（真人不固定）',
+    长度参差: '长短有没有变化',
+    短回复占比: '会不会只说两三个字',
+    表情使用: '会不会发表情',
+    复读控制: '会不会重复同一个开头',
+    句式多样: '有没有固定套路',
+    响应延迟: '回得快不快',
+  };
+  function renderAudit(a) {
+    if (!a) return;
+    $('aScore').innerHTML = a.total + '<small>/100</small>';
+    const box = $('aDims');
+    box.innerHTML = '';
+    if (Array.isArray(a.sessions) && a.sessions.length) {
+      const head = document.createElement('p');
+      head.className = 'note';
+      head.style.margin = '0 0 8px';
+      head.textContent = '各会话：' + a.sessions.map((s) =>
+        s.name + ' ' + (s.insufficient ? '样本不足' : s.total + ' 分')).join(' ｜ ');
+      box.appendChild(head);
+    }
+    for (const k of DIMS) {
+      const v = a.dims[k];
+      if (v === undefined) continue;
+      const cls = v >= 80 ? '' : v >= 50 ? 'warn' : 'bad';
+      const row = document.createElement('div');
+      row.className = 'dim';
+      row.innerHTML = '<span class="n" title="' + (DIM_TIP[k] || '') + '">' + k + '</span>' +
+        '<div class="track"><div class="fill ' + cls + '" style="width:' + v + '%"></div></div>' +
+        '<span class="v">' + v + '</span>';
+      box.appendChild(row);
+    }
+    $('aMeta').textContent = '看了 ' + a.samples + ' 次回复 / ' + a.messages + ' 条消息' +
+      (a.sessions && a.sessions.length ? '（来自 ' + a.sessions.length + ' 个会话）' : '') + ' · ' +
+      '两连发 ' + a.dist2 + '% · 短回复 ' + a.short + '% · 表情 ' + a.media + '% · ' +
+      '机械句式 ' + a.meta + '% · 延迟 ' + a.delay + ' 秒' +
+      (a.repeat && a.repeat !== '无' ? ' · 复读 ' + a.repeat : '');
+  }
+  async function loadAuditHistory() {
+    try {
+      const d = await api('/api/audit/history');
+      if (d.history.length) renderAudit(d.history[d.history.length - 1]);
+    } catch {}
+  }
+  $('runAudit').onclick = async () => {
+    const b = $('runAudit');
+    b.disabled = true; b.textContent = '打分中…';
+    try {
+      const d = await api('/api/audit');
+      if (d.ok) { renderAudit(d.audit); toast('打分完成：' + d.audit.total + ' 分'); }
+      // 失败时把脚本的原话显示出来（比如「桥接记录里没有她的消息…」），别只说「打分失败」
+      else toast(String(d.raw || '打分失败').split('\n')[0].slice(0, 60), true);
+    } catch (e) { toast('打分失败：' + e.message, true); }
+    b.disabled = false; b.textContent = '开始打分';
+  };
+
+  // ── 会话 ──
+  function renderSessions(list) {
+    const box = $('sessList');
+    const live = (list || []).filter((s) => s.live);
+    if (!live.length) { box.innerHTML = '<p class="note">现在没有正在用的记忆。</p>'; return; }
+    box.innerHTML = '';
+    for (const s of live) {
+      const row = document.createElement('div');
+      row.className = 'li';
+      row.innerHTML = '<span class="k">' + s.key + '</span><span class="t">' + fmt(s.tokens) + '</span><span class="sp"></span>';
+      const b1 = document.createElement('button');
+      b1.className = 'sm'; b1.textContent = '看本子';
+      b1.onclick = async () => {
+        const d = await api('/api/notebook?key=' + encodeURIComponent(s.key));
+        const v = $('nbView');
+        v.hidden = false;
+        v.textContent = d.exists ? d.text : '（这一处还没写过本子）';
+      };
+      const b2 = document.createElement('button');
+      b2.className = 'sm'; b2.textContent = '清空';
+      b2.onclick = async () => {
+        b2.disabled = true;
+        try { await post('/api/session/reset', { key: s.key }); toast('已清空 ' + s.key); load(); }
+        catch (e) { toast('清空失败：' + e.message, true); }
+        b2.disabled = false;
+      };
+      row.appendChild(b1); row.appendChild(b2);
+      box.appendChild(row);
+    }
+  }
+  $('reloadSess').onclick = () => load().then(() => toast('已刷新'));
+
+  // ── 工具 ──
+  function renderTools(tools, meta) {
+    const grid = $('toolGrid');
+    grid.innerHTML = '';
+    let on = 0, total = 0;
+    for (const cat of ['基础', '媒体', '记忆', '其他']) {
+      const items = meta.filter((m) => m.cat === cat);
+      if (!items.length) continue;
+      const h = document.createElement('div');
+      h.className = 'cat';
+      h.textContent = cat;
+      grid.appendChild(h);
+      const wrap = document.createElement('div');
+      wrap.className = 'tools';
+      for (const m of items) {
+        const isOn = tools[m.flag] !== false;
+        total++; if (isOn) on++;
+        const el = document.createElement('div');
+        el.className = 'tool ' + (isOn ? 'on' : 'off');
+        el.innerHTML = '<div class="nm">' + m.label + '<small>' + m.flag + '</small></div><div class="sw"></div>';
+        el.onclick = async () => {
+          el.classList.toggle('on'); el.classList.toggle('off');
+          const next = el.classList.contains('on');
+          try { await post('/api/save', { field: 'tool', flag: m.flag, value: next }); toast((next ? '打开 ' : '关掉 ') + m.label); }
+          catch (e) { el.classList.toggle('on'); el.classList.toggle('off'); toast('失败：' + e.message, true); }
+        };
+        wrap.appendChild(el);
+      }
+      grid.appendChild(wrap);
+    }
+    $('toolCount').textContent = on + ' / ' + total + ' 开着';
+  }
+
+  // ── 备份 ──
+  async function loadInnerVoice() {
+    const box = $('ivText');
+    let d;
+    try { d = await api('/api/inner-voice?limit=100'); }
+    catch (e) { box.textContent = '读取失败：' + e.message; return; }
+    if (!d.exists) { box.textContent = '还没有记录。她下次看完消息决定不说话时，这里就会有内容。'; return; }
+    box.textContent = d.text || '（文件是空的）';
+  }
+  const ivBtn = $('ivRefresh');
+  if (ivBtn) ivBtn.onclick = () => loadInnerVoice();
+
+  // ── 黑话本 ──
+  const SL_LABEL = { confirmed: '已确认', candidate: '候选', rejected: '已拒绝' };
+  let slRows = [];   // 当前列表（批量操作要按 id 取）
+  function slPickedIds() {
+    return [...document.querySelectorAll('#slList input[type=checkbox]:checked')].map((c) => c.dataset.id);
+  }
+  function slUpdatePicked() {
+    const n = slPickedIds().length;
+    $('slPicked').textContent = n ? `已选 ${n} 条` : '未选';
+  }
+  async function loadSlang() {
+    const box = $('slList');
+    const stat = $('slStat');
+    const f = $('slFilter').value;
+    let d;
+    try { d = await api('/api/slang' + (f ? '?status=' + encodeURIComponent(f) : '')); }
+    catch (e) { box.innerHTML = '<p class="note">读取失败：' + e.message + '</p>'; return; }
+    const list = d.entries || [];
+    slRows = list;
+    const writable = d.writable !== false;
+    stat.textContent = `共 ${list.length} 条` + (writable ? '' : '（黑话库处于只读状态，改动不会保存）');
+    const allBox = $('slAll');
+    if (allBox) allBox.checked = false;
+    slUpdatePicked();
+    if (!list.length) { box.innerHTML = '<p class="note">没有符合条件的黑话。</p>'; return; }
+    box.innerHTML = '';
+    for (const it of list) {
+      const row = document.createElement('div');
+      row.style.cssText = 'padding:10px 0;border-bottom:1px solid var(--border)';
+      const head = document.createElement('div');
+      head.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.dataset.id = it.id;
+      cb.onchange = slUpdatePicked;
+      head.appendChild(cb);
+
+      const word = document.createElement('b');
+      word.textContent = it.content;
+      const badge = document.createElement('span');
+      badge.className = 'note';
+      badge.textContent = SL_LABEL[it.status] || it.status;
+      head.appendChild(word);
+      head.appendChild(badge);
+      const cnt = document.createElement('span');
+      cnt.className = 'note';
+      cnt.textContent = `出现 ${it.count || 0} 次`;
+      head.appendChild(cnt);
+      const sp = document.createElement('span');
+      sp.style.flex = '1';
+      head.appendChild(sp);
+
+      // 已确认 → 可降级；候选 → 可确认；都提供删除
+      if (it.status === 'confirmed') {
+        const b = document.createElement('button');
+        b.className = 'sm';
+        b.textContent = '降级';
+        b.onclick = () => setSlangStatus(it, 'candidate');
+        head.appendChild(b);
+      } else if (it.status === 'candidate') {
+        const b = document.createElement('button');
+        b.className = 'sm';
+        b.textContent = '确认使用';
+        b.onclick = () => setSlangStatus(it, 'confirmed');
+        head.appendChild(b);
+      }
+      const del = document.createElement('button');
+      del.className = 'sm';
+      del.textContent = '删除';
+      del.onclick = () => deleteSlang(it);
+      head.appendChild(del);
+
+      row.appendChild(head);
+      if (it.meaning) {
+        const m = document.createElement('div');
+        m.style.cssText = 'margin-top:6px;font-size:13px;color:var(--muted)';
+        m.textContent = it.meaning;
+        row.appendChild(m);
+      }
+      box.appendChild(row);
+    }
+  }
+  async function setSlangStatus(it, status) {
+    try { await post('/api/slang/' + encodeURIComponent(it.id), { status }); }
+    catch (e) { alert('操作失败：' + e.message); return; }
+    loadSlang();
+  }
+  async function deleteSlang(it) {
+    if (!confirm(`确定删除「${it.content}」？删除后她就不会再用这个词，且无法恢复。`)) return;
+    try { await post('/api/slang/batch-delete', { ids: [it.id] }); }
+    catch (e) { alert('删除失败：' + e.message); return; }
+    loadSlang();
+  }
+  // 批量：确认 / 降级 / 删除
+  async function slBatch(action) {
+    const ids = slPickedIds();
+    if (!ids.length) { alert('先勾选几条再操作'); return; }
+    const names = { confirm: '确认使用', demote: '降级', delete: '删除' };
+    if (!confirm(`确定${names[action]}这 ${ids.length} 条黑话？`)) return;
+    let r;
+    try {
+      if (action === 'delete') r = await post('/api/slang/batch-delete', { ids });
+      else if (action === 'confirm') r = await post('/api/slang/batch-confirm', { ids });
+      else r = await post('/api/slang/batch-demote', { ids });
+    } catch (e) { alert('操作失败：' + e.message); return; }
+    // 桥接的批量接口回的字段名各不相同，这里统一取一个「成功条数」用来反馈
+    const n = r?.demotedCount ?? r?.confirmedCount ?? r?.removedCount ?? r?.rejectedCount ?? 0;
+    const miss = r?.skippedCount ?? r?.failedCount ?? 0;
+    alert(`完成：成功 ${n} 条` + (miss ? `，跳过/失败 ${miss} 条` : ''));
+    loadSlang();
+  }
+  const slBtn = $('slRefresh');
+  if (slBtn) slBtn.onclick = () => loadSlang();
+  const slSel = $('slFilter');
+  if (slSel) slSel.onchange = () => loadSlang();
+  const slAll = $('slAll');
+  if (slAll) slAll.onclick = () => {
+    const on = slAll.checked;
+    document.querySelectorAll('#slList input[type=checkbox]').forEach((c) => { c.checked = on; });
+    slUpdatePicked();
+  };
+  const slC = $('slConfirm');
+  if (slC) slC.onclick = () => slBatch('confirm');
+  const slD = $('slDemote');
+  if (slD) slD.onclick = () => slBatch('demote');
+  const slDel = $('slDelete');
+  if (slDel) slDel.onclick = () => slBatch('delete');
+
+  async function loadBackups() {
+    let d;
+    try { d = await api('/api/backups'); }
+    catch (e) { $('bkList').innerHTML = '<p class="note">读取失败：' + e.message + '</p>'; return; }
+    const box = $('bkList');
+    box.innerHTML = '';
+    for (const t of d.targets) {
+      if (!t.items.length) continue;
+      const h = document.createElement('div');
+      h.className = 'cat';
+      h.textContent = t.label;
+      box.appendChild(h);
+      const wrap = document.createElement('div');
+      wrap.className = 'list';
+      for (const it of t.items.slice(0, 3)) {
+        const dt = new Date(it.mtime);
+        const p2 = (n) => String(n).padStart(2, '0');
+        const row = document.createElement('div');
+        row.className = 'li';
+        row.innerHTML = '<span class="k" title="' + it.name + '">' + it.name + '</span>' +
+          '<span class="t">' + (dt.getMonth() + 1) + '-' + p2(dt.getDate()) + ' ' + p2(dt.getHours()) + ':' + p2(dt.getMinutes()) + '</span><span class="sp"></span>';
+        const b = document.createElement('button');
+        b.className = 'sm'; b.textContent = '恢复';
+        b.onclick = async () => {
+          b.disabled = true;
+          try { await post('/api/restore', { file: t.id, name: it.name }); toast('已恢复到这一份'); load(); loadBackups(); }
+          catch (e) { toast('恢复失败：' + e.message, true); b.disabled = false; }
+        };
+        row.appendChild(b);
+        wrap.appendChild(row);
+      }
+      box.appendChild(wrap);
+    }
+  }
+  $('reloadBackups').onclick = () => loadBackups().then(() => toast('已刷新'));
+
+  // ── 保存类 ──
+  $('ctxRange').oninput = (e) => { $('ctxNum').value = e.target.value; };
+  $('ctxNum').oninput = (e) => { $('ctxRange').value = Math.min(200000, Number(e.target.value) || 50000); };
+  $('ctxSave').onclick = async () => {
+    try { await post('/api/save', { field: 'ctxLimit', value: Number($('ctxNum').value) }); toast('记忆长度已保存'); load(); }
+    catch (e) { toast('保存失败：' + e.message, true); }
+  };
+
+  // ── 模型选择 ──
+  let MODELS = [];
+  let curSel = null;
+  let effortPref = 'low';
+
+  function renderModels() {
+    const box = $('modelList');
+    const kw = ($('modelSearch').value || '').trim().toLowerCase();
+    const list = MODELS.filter((m) => !kw
+      || m.ref.toLowerCase().includes(kw)
+      || m.name.toLowerCase().includes(kw));
+    if (!list.length) { box.innerHTML = '<p class="note">没有匹配的模型。</p>'; return; }
+
+    box.innerHTML = '';
+    let lastProvider = null;
+    const grid = document.createElement('div');
+    grid.className = 'mgrid';
+    for (const m of list) {
+      if (m.provider !== lastProvider) {
+        const h = document.createElement('div');
+        h.className = 'mlabel';
+        h.style.gridColumn = '1 / -1';
+        h.textContent = m.groupName;
+        grid.appendChild(h);
+        lastProvider = m.provider;
+      }
+      const isCur = curSel && curSel.provider === m.provider && curSel.model === m.id;
+      const card = document.createElement('div');
+      card.className = 'mcard' + (isCur ? ' on' : '');
+      card.innerHTML = '<div class="txt"><div class="nm">' + m.name +
+        '</div><div class="ref">' + m.ref + '</div></div>' +
+        (isCur ? '<span class="badge">当前</span>' : '');
+      card.onclick = () => pickModel(m);
+      grid.appendChild(card);
+    }
+    box.appendChild(grid);
+  }
+
+  // 每个模型支持的「认真程度」档位不一样：当前这条只认 off/low/high/max，没有 medium。
+  // 所以按钮不能写死全显示——按当前模型支持的档位来显示，避免点到不存在的档位。
+  function supportedEfforts(provider, model) {
+    const hit = MODELS.find((m) => m.provider === provider && m.id === model);
+    const list = (hit?.efforts || []).filter(Boolean);
+    return list.length ? list : null;   // null = 目录没给，退回全显示
+  }
+  function renderEfforts(provider, model) {
+    const allow = supportedEfforts(provider, model);
+    const btns = [...$('effortSeg').children];
+    for (const b of btns) {
+      const ok = !allow || allow.includes(b.dataset.v);
+      b.hidden = !ok;
+      b.classList.toggle('on', ok && b.dataset.v === effortPref);
+    }
+    // 当前档位不被支持时，退到该模型第一个可用档位
+    if (allow && !allow.includes(effortPref)) {
+      effortPref = allow[0];
+      btns.forEach((b) => b.classList.toggle('on', b.dataset.v === effortPref));
+    }
+  }
+
+  // 「现在用的」分两段显示：兜底（config 里写的 / 面板点出来的）+ 实际生效（桥接真正解析到的线路）。
+  // followBot 优先于 config，所以两者可能不一样：2026-11-01 凌晨面板显示 group/contact-api、
+  // 实际跑的是 dfmodel，就是这么把人绕进去的。不一致就标出来，别让人以为点了就生效。
+  function renderCurModel(cur) {
+    const el = $('curModel');
+    if (!el) return;
+    const cfgRef = (cur?.provider || '?') + ' / ' + (cur?.model || '?');
+    if (!cur || !cur.effective) { el.textContent = '兜底：' + cfgRef + ' ｜ 实际生效：读取中…'; return; }
+    const ef = cur.effective;
+    const efRef = ef.provider && ef.model ? (ef.provider + ' / ' + ef.model) : (ef.ref || (ef.error ? '读不到（' + ef.error + '）' : '读不到'));
+    let src = '';
+    if (ef.source && String(ef.source).startsWith('followBot')) {
+      // source 形如 followBot:qq小鱼 —— 这里要显示的是 Bot 名字，不是它的模型 ref
+      const name = String(ef.source).slice('followBot:'.length).trim();
+      src = '（跟随 ' + (name || 'Bot') + '）';
+    } else if (ef.source === 'config') {
+      src = '（用面板配置）';
+    }
+    const same = !!ef.ref && ef.ref === (cur.provider + '/' + cur.model);
+    el.innerHTML = '兜底：' + cfgRef
+      + ' <span style="opacity:.45">｜</span> 实际生效：'
+      + '<b style="color:' + (same ? 'inherit' : 'var(--warn)') + '">' + efRef + '</b>' + src
+      + (same ? '' : ' <span style="color:var(--warn)">⚠ 不一致：兜底值没生效（被 followBot 覆盖），实际按上面这个跑</span>');
+  }
+
+  async function loadModels() {
+    try {
+      const d = await api('/api/models');
+      MODELS = d.list || [];
+      curSel = { provider: d.current?.provider, model: d.current?.model };
+      effortPref = d.current?.effort || 'low';
+      renderCurModel(d.current);
+      renderEfforts(curSel.provider, curSel.model);
+      renderModels();
+    } catch (e) {
+      $('modelList').innerHTML = '<p class="note">读取模型列表失败：' + e.message + '</p>';
+    }
+  }
+
+  async function pickModel(m) {
+    if (curSel && curSel.provider === m.provider && curSel.model === m.id) return;
+    const ok = confirm('切换到「' + m.name + '」？' + String.fromCharCode(10) + String.fromCharCode(10) + m.ref + ' ' + String.fromCharCode(10) + String.fromCharCode(10) + '会对所有正在聊的群立即生效。');
+    if (!ok) return;
+    // 先把档位对齐到「目标模型支持的」再发，否则会把当前模型的档位（比如 off）
+    // 硬塞给一个不支持它的模型，DSH 那头会拒。
+    const allow = supportedEfforts(m.provider, m.id);
+    if (allow && !allow.includes(effortPref)) effortPref = allow[0];
+    try {
+      toast('正在切换…');
+      const r = await post('/api/model/switch', {
+        provider: m.provider,
+        model: m.id,
+        effort: effortPref,
+        applyToSessions: true,
+      });
+      const failed = (r.applied || []).filter((x) => !x.ok);
+      curSel = { provider: m.provider, model: m.id };
+      renderCurModel({ provider: m.provider, model: m.id, effective: null });
+      loadModels(); // 再取一次真实的「实际生效」值回来修正（followBot 可能盖过刚点的这个）
+      renderEfforts(m.provider, m.id);
+      renderModels();
+      if (failed.length) toast('已保存，但 ' + failed.length + ' 个会话没切换成功（见现场记录）', true);
+      else toast('已切换到 ' + m.name);
+    } catch (e) {
+      toast('切换失败：' + e.message, true);
+    }
+  }
+
+  $('reloadModels').onclick = () => loadModels().then(() => toast('已刷新'));
+  $('modelSearch').oninput = () => renderModels();
+  $('effortSeg').onclick = (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    effortPref = b.dataset.v;
+    [...$('effortSeg').children].forEach((x) => x.classList.toggle('on', x === b));
+  };
+
+  $('promptBox').oninput = () => {
+    promptDirty = true;
+    $('promptDirty').textContent = '还没保存';
+    $('promptCount').textContent = '规则书 ' + $('promptBox').value.length + ' 字';
+  };
+  $('promptSave').onclick = async () => {
+    try {
+      await post('/api/save', { field: 'prompt', value: $('promptBox').value });
+      promptDirty = false; $('promptDirty').textContent = '';
+      toast('规则书已保存');
+    } catch (e) { toast('保存失败：' + e.message, true); }
+  };
+  $('promptReset').onclick = () => { promptDirty = false; $('promptDirty').textContent = ''; load(); };
+
+  $('roleBox').oninput = () => {
+    roleDirty = true;
+    $('roleDirty').textContent = '还没保存';
+    $('roleCount').textContent = '人格卡 ' + $('roleBox').value.length + ' 字';
+  };
+  $('roleSave').onclick = async () => {
+    try {
+      await post('/api/save', { field: 'role', value: $('roleBox').value });
+      roleDirty = false; $('roleDirty').textContent = '';
+      toast('人格卡已保存，立即生效');
+    } catch (e) { toast('保存失败：' + e.message, true); }
+  };
+  $('roleReset').onclick = () => { roleDirty = false; $('roleDirty').textContent = ''; load(); };
+
+  // ── 重启 ──
+  const doRestart = async (target, label) => {
+    toast('正在重启' + label + '…');
+    try { await post('/api/restart', { target }); toast('重启完成'); load(); }
+    catch (e) { toast('重启失败：' + e.message, true); }
+  };
+  // 这些按钮在不同版本里出现过/被移除；用可选调用，避免某个 id 缺失就中断整个初始化。
+  const on = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+  on('restartBridge', () => doRestart('bridge', '聊天'));
+  on('restartAll', () => doRestart('all', '全部（约 40 秒）'));
+  on('restartBridge2', () => doRestart('bridge', '聊天'));
+  on('restartAll2', () => doRestart('all', '全部（约 40 秒）'));
+
+  $('refreshStatus').onclick = () => { load(); loadAssets(); toast('已刷新'); };
+
+  // ── 暂停与停止 ──
+  let armed = false, armTimer = null;
+
+  function renderPower(p) {
+    const running = p.bridgeRunning === true;
+    const paused = p.paused === true;
+
+    const ps = $('pauseState');
+    const pb = $('pauseBtn');
+    pb.disabled = !running;
+    if (!running) {
+      ps.textContent = '聊天程序没在跑，暂停无从谈起';
+      pb.textContent = '不可用';
+      pb.className = 'primary';
+    } else if (paused) {
+      ps.textContent = '已暂停 —— 她在看群，但不会说话';
+      pb.textContent = '恢复发送';
+      pb.className = 'primary';
+    } else {
+      ps.textContent = '正常发送中';
+      pb.textContent = '暂停发送';
+      pb.className = 'primary';
+    }
+
+    $('svcState').textContent = running ? '聊天在跑' : '聊天已停';
+    $('startAllBtn').disabled = running;
+  }
+
+  async function loadPower() {
+    try { renderPower(await api('/api/power')); }
+    catch { $('pauseState').textContent = '读取失败'; $('svcState').textContent = '读取失败'; }
+  }
+
+  $('pauseBtn').onclick = async () => {
+    const b = $('pauseBtn');
+    const next = (await api('/api/power')).paused !== true;
+    b.disabled = true;
+    try {
+      await post('/api/pause', { paused: next });
+      toast(next ? '已暂停发送' : '已恢复发送');
+      await loadPower();
+      load();
+    } catch (e) { toast('操作失败：' + e.message, true); }
+    b.disabled = false;
+  };
+
+  $('stopAllBtn').onclick = async () => {
+    const b = $('stopAllBtn');
+    if (!armed) {
+      armed = true;
+      b.textContent = '再点一次确认停止';
+      b.classList.add('arm');
+      clearTimeout(armTimer);
+      armTimer = setTimeout(() => {
+        armed = false;
+        b.textContent = '全部停止';
+        b.classList.remove('arm');
+      }, 5000);
+      return;
+    }
+    armed = false;
+    clearTimeout(armTimer);
+    b.classList.remove('arm');
+    b.textContent = '全部停止';
+    b.disabled = true;
+    toast('正在停止…');
+    try {
+      const r = await post('/api/shutdown', {});
+      toast(r.ok ? '已全部停止' : '停止时有问题，看现场记录', !r.ok);
+      await loadPower();
+      load();
+    } catch (e) { toast('停止失败：' + e.message, true); }
+    b.disabled = false;
+  };
+
+  $('startAllBtn').onclick = async () => {
+    const b = $('startAllBtn');
+    const state = $('svcState');
+    b.disabled = true;
+    toast('启动指令已发出…');
+    let spawned = true;
+    try { await post('/api/startup', {}); }
+    catch (e) { spawned = false; toast('启动失败：' + e.message, true); b.disabled = false; }
+    if (!spawned) return;
+    // startAll 的 ok 只代表「管家进程拉起来了」，桥接真正就绪要 15~30 秒
+    //（guardian 启动 → 检测桥接不在 → hidden-launch 拉起 → 连 SnowLuma/DSH）。
+    // 所以这里轮询 45 秒：每 3 秒问一次 /api/power，起来才算成功。
+    const deadline = Date.now() + 45000;
+    while (Date.now() < deadline) {
+      const wait = Math.round((deadline - Date.now()) / 1000);
+      state.textContent = `启动中…（已等 ${45 - wait}s，上限 45s）`;
+      try {
+        const p = await api('/api/power');
+        if (p.bridgeRunning) {
+          state.textContent = '聊天在跑';
+          toast('已启动 ✅ 她可以说话了');
+          loadPower();
+          load();
+          return;
+        }
+      } catch {}
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+    state.textContent = '启动超时';
+    toast('45 秒内没等到聊天上线——管家可能没起来。看「现场记录」的管家日志，或叫 AI 查。', true);
+    loadPower();
+    b.disabled = false;
+  };
+
+  // 守护心跳 + 面板自愈开关（只读）。
+  // 心跳超 3 分钟标红（2026-10-31 守护死了 4 小时没人知道）；面板自愈关掉时显示灰色，**不标红**（关掉不是故障）。
+  async function loadGuardian() {
+    const el = $('guardian');
+    if (!el) return;
+    try {
+      const g = await api('/api/guardian');
+      const panelText = g.panelGuardian === 'off' ? '面板自愈：关（已手动停止）' : '面板自愈：开';
+      let heartText;
+      let cls;
+      if (g.state === 'missing') { heartText = '守护心跳：没有记录'; cls = 'dot-conn bad'; }
+      else {
+        const ago = g.ageMin <= 0 ? '刚刚' : `${g.ageMin} 分钟前`;
+        heartText = `守护心跳：${ago}${g.ok ? '' : '（超 3 分钟，守护可能没在跑）'}`;
+        cls = g.ok ? 'dot-conn' : 'dot-conn bad';
+      }
+      // 自愈关闭时整格转灰（优先级高于心跳红/绿）——用户主动关的，不该报警。
+      if (g.panelGuardian === 'off') cls = 'dot-conn muted';
+      el.className = cls;
+      el.innerHTML = `<b></b>${heartText} ｜ ${panelText}`;
+      el.title = g.at ? `最后心跳 ${g.at}` : '';
+    } catch {
+      el.className = 'dot-conn bad';
+      el.innerHTML = '<b></b>守护心跳：读取失败';
+    }
+  }
+
+  load();
+  loadAssets();
+  loadGuardian();
+  show((() => { try { return sessionStorage.getItem('panelView') || 'status'; } catch { return 'status'; } })());
+  setInterval(() => { load(); loadAssets(); loadGuardian(); }, 5000);
+})();
+</script>
+</body>
+</html>

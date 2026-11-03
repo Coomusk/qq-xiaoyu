@@ -1,0 +1,29 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # 框架类依赖一起升，避免「sdk 升了 mcp 没升」的半套状态
+      mcp:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dsh:
+        patterns:
+          - "@deepseek-ai/*"
+      # @snowluma/* 由 postinstall 打补丁，升级前必须人工确认补丁仍匹配
+      snowluma:
+        patterns:
+          - "@snowluma/*"
+        update-types:
+          - minor
+          - patch
+      dev-deps:
+        dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题（不要开公开 issue）
+    url: https://github.com/Coomusk/qq-xiaoyu/security/advisories/new
+    about: 准入绕过、路径穿越、SSRF、凭据泄漏等，请走私密报告
+  - name: 已知问题
+    url: https://github.com/Coomusk/qq-xiaoyu/blob/main/KNOWN_ISSUES.md
+    about: 5 个红的回归套件与已知限制，先看这里
+  - name: SnowLuma 自身的问题
+    url: https://github.com/SnowLuma/SnowLuma/issues
+    about: 原生 hook 挂不上、收不到 QQ 消息——那是网关的问题，不是本项目的
