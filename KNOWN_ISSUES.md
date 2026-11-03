@@ -3,21 +3,21 @@
 > 记录**当前确实不工作**或**测试是红的**的东西。不粉饰：红的就写红。
 > 最后核对：2026-11-03（v0.3.0-beta.1）
 
-## 一、红的回归套件（`npm run test:audit` → 30/35）
+## 一、红的回归套件（`npm run test:audit` → 33/35）
 
-这 5 个套件失败，都是**真实行为断言**，不是环境问题。CI 只跑稳定子集，见 `.github/workflows/ci.yml`。
+这 2 个套件仍失败，都是**真实行为断言**，不是环境问题。CI 只跑稳定子集，见 `.github/workflows/ci.yml`。
 
 | 套件 | 失败的断言 | 初步判断 |
 | --- | --- | --- |
-| `test-token-economy.mjs` | 8 条：观察游标语义（`200 !== 403`、`undefined !== true`）——暂停/换会话/限流后，in-flight 的 wait 仍然授权了观察 | 重构后「观察」与「已读水位」的授权关系变了，测试还按旧契约断言。**可能是测试滞后，也可能是权限漏洞，未定性** |
-| `test-reply-wait.mjs` | 4 条：首回复在快照已经安静时不应等满 timeout；快照与 wait 之间的新消息不应重复 | 「等对方说完」的计时起点与去重逻辑 |
-| `test-audit-regressions.mjs` | R4：到期的**有限潜水**没有补发一次 `timeout` 唤醒（`0 !== 1`） | 唤醒定时器在某种状态下不触发——**这条影响真实体验**（设了潜水到点不醒） |
-| `test-issue-regressions.mjs` | #29：唤醒 prompt 里没有机器人自己的昵称与 QQ 号 | 身份注入丢了。agent 靠这段对上「我是谁」，缺了容易把别人的话当成对自己说的 |
-| `test-v2-initial-prompt.mjs` | 2 条：`bootstrap` 没有真的投递一次 prompt；首条群消息没有触发恰好一次 bootstrap | 初始提示词在首唤醒时可能发不出去 |
+| `test-token-economy.mjs` | 4 条：观察游标语义（`200 !== 403`、`undefined !== true`）——暂停/换会话/限流后，in-flight 的 wait 仍然授权了观察 | 「观察」与「已读水位」的授权关系在重构后变了。**可能是测试滞后，也可能是权限漏洞，未定性** |
+| `test-reply-wait.mjs` | 4 条：首回复在快照已经安静时不应等满 timeout；快照与 wait 之间的新消息不应重复、且未读仍应可见 | `qq_wait_for_messages` 的计时起点与去重逻辑；`getUnread` 投影也报空 |
 
-> 曾经还有 2 个套件是红的，已修：
-> - `test-audit-setup-guards.mjs` —— `start.bat` 里有一行中文 `rem`，在非 UTF-8 控制台会乱码；已改成英文注释
-> - `test-voice-system.mjs` —— 它无条件读 `docs/guides/VOICE.md`，而该文件曾被 gitignore，**全新 clone 直接 ENOENT 崩溃**；已补文档并加存在性守卫
+> **已修的套件**（都属「只有作者机器能过」或「断言写的是旧版文案」）：
+> - `test-audit-setup-guards.mjs` —— `start.bat` 有一行中文 `rem`，非 UTF-8 控制台乱码；改成英文注释
+> - `test-voice-system.mjs` —— 无条件读被 gitignore 的 `docs/guides/VOICE.md`，全新 clone 直接 ENOENT 崩溃；补文档 + 存在性守卫
+> - `test-preset-local-tools.mjs` —— 找不到 DSH 安装时 `dshPackagesDir()` 抛错穿透成失败；归一成「跳过」
+> - `test-audit-regressions.mjs`（R4）与 `test-v2-initial-prompt.mjs` —— 根因是**审计脚手架** `scripts/audit-bridge-harness.mjs` 的 VM 上下文漏注入 `src/role-card.js`，`buildWakePromptV2` 里 `selectRoleText is not defined` → 所有唤醒投递都失败。**产品代码本身没坏**（生产里是正常 import）
+> - `test-issue-regressions.mjs`（#29）—— 断言写的是旧标签 `【你的身份】`，而唤醒提示已合并成 `【身份】`（省 token）；改为匹配 `【(你的)?身份】`，保留「必须带身份」的本意
 
 ## 二、功能限制（设计如此，不是 bug）
 

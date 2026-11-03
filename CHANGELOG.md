@@ -5,7 +5,7 @@
 ## [0.3.0-beta.1] — 2026-11-03
 
 第一个以 `qq-xiaoyu` 名义发布的版本。代码基线是上游 `qq-bridge` v0.2.1-r1 **加本地未合并的改进**，
-因此标 beta：功能是全的，回归套件有 5 个是红的（见 [KNOWN_ISSUES.md](KNOWN_ISSUES.md)）。
+因此标 beta：功能是全的，回归套件还有 2 个是红的（见 [KNOWN_ISSUES.md](KNOWN_ISSUES.md)）。
 
 ### 新增（相对上游 v0.2.1-r1）
 
@@ -38,6 +38,8 @@
 - `.gitattributes`：preset 的 YAML 行尾钉死 CRLF。曾经写过全局 `eol=lf`，导致全新 clone 上 `test-preset-prompt`（断言保持 CRLF 写回）必红，而作者本地看不出来
 - CI：跑在 `windows-latest`（运行面就是 Windows），失败时输出 annotation 指明是哪条套件
 - Dependabot：只收 minor/patch，`@snowluma/*` 不动（postinstall 会对它的 dist 打补丁）
+- 审计脚手架 `scripts/audit-bridge-harness.mjs`：VM 上下文漏注入 `src/role-card.js`，导致 `selectRoleText is not defined`、所有唤醒投递失败。修好后 `test-audit-regressions`（R4）与 `test-v2-initial-prompt` 转绿 —— 产品代码本身没坏
+- `test-issue-regressions`（#29）：断言对齐现状（身份段已与角色行合并为 `【身份】`），保留「每次唤醒必须带身份」的本意
 
 ### 移除
 
@@ -45,8 +47,7 @@
 
 ### 未完成
 
-- 5 个回归套件仍为红：`test-token-economy`、`test-reply-wait`、`test-audit-regressions`（R4）、
-  `test-issue-regressions`（#29）、`test-v2-initial-prompt`。详见 [KNOWN_ISSUES.md](KNOWN_ISSUES.md)
+- 2 个回归套件仍为红：`test-token-economy`（4 条观察游标语义）、`test-reply-wait`（4 条计时/去重）。详见 [KNOWN_ISSUES.md](KNOWN_ISSUES.md)
 
 ## 上游历史
 

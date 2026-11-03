@@ -73,9 +73,6 @@ const tests = [
 const KNOWN_RED = new Set([
   'test-token-economy.mjs',
   'test-reply-wait.mjs',
-  'test-audit-regressions.mjs',
-  'test-issue-regressions.mjs',
-  'test-v2-initial-prompt.mjs',
 ]);
 const strict = process.argv.includes('--strict');
 let failed = 0;

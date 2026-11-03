@@ -26,7 +26,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # 30/35 通过、5 个由 KNOWN_RED 隔离（见 KNOWN_ISSUES.md）。
+      # 33/35 通过、2 个由 KNOWN_RED 隔离（见 KNOWN_ISSUES.md）。
       # 新增的失败会让这一步红；修好一个已知红就从 scripts/test-audit.mjs 的 KNOWN_RED 里删掉。
       - name: npm run test:audit
         run: npm run test:audit

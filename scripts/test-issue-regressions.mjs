@@ -106,13 +106,17 @@ await test('#29 唤醒 prompt 必须写明机器人自己的昵称与 QQ 号', a
     assert.match(line, /10001/);
     assert.match(line, /@樰/, '必须明确「@昵称」指的是自己');
 
+    // 唤醒提示里身份段与「当前角色」合并成了【身份】（省 token，见 buildWakePromptV2
+    // 的注释）；收尾提醒与单独的身份文本仍是【你的身份】。断言只钉「必须带身份」这件事，
+    // 不钉具体标签 —— 标签是排版细节，合并/拆分都不该让它红。
+    const IDENTITY_MARK = /【(?:你的)?身份】/;
     const prompt = h.buildWakePromptV2(KEY, 'atMention');
-    assert.match(prompt, /【你的身份】/, '每次唤醒都要带身份（它是 agent 唯一能对上号的地方）');
+    assert.match(prompt, IDENTITY_MARK, '每次唤醒都要带身份（它是 agent 唯一能对上号的地方）');
     assert.match(prompt, /@樰/);
     assert.match(prompt, /10001/);
 
     const reminder = h.buildWakeReminderPromptV2(KEY);
-    assert.match(reminder, /【你的身份】/, '收尾提醒也要带身份');
+    assert.match(reminder, IDENTITY_MARK, '收尾提醒也要带身份');
 
     h.setSelfIdentity('', '');
     assert.equal(h.selfIdentityTextV2(), '', '身份未知时不注入空行（不能写「你的昵称是（）」）');
