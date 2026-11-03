@@ -103,7 +103,15 @@ const OPTIONAL_BUNDLE_TOOLS = new Set(['subagent_codex', 'subagent_claude_code']
  * 现在只保留一条实现，两边不可能再漂移。
  */
 function collectDshToolNames() {
-  const { names } = collectDshToolNamesShared();
+  // `dshPackagesDir()` 在找不到 DSH 安装时会**抛错**（`dsh-modules.mjs` 故意不静默
+  // 回退到写死路径）。全新 clone / CI 上必然如此，所以这里把"找不到"归一成 null，
+  // 由调用方跳过——否则这条安全断言会在任何干净环境里永久飘红，红到没人再看它。
+  let names;
+  try {
+    ({ names } = collectDshToolNamesShared());
+  } catch {
+    return null;
+  }
   return names.size === 0 ? null : new Set(names.keys());
 }
 /** 允许出现在名单里、但不属于"本地执行"语义的名字（开发/注入器）。 */
@@ -212,7 +220,10 @@ test('守卫名单里的每个名字都是 DSH 真实注册的工具（防拼错
   // pwsh_persistent / bash_persistent / cordis / goal_write / goal_read 五个假名
   // 让整批限制悄悄少生效，而套件当时全绿。
   const dshNames = collectDshToolNames();
-  if (dshNames === null) {
+  // 空集合 ≠「DSH 没注册任何工具」，而是「这台机器上找不到 DSH 安装」。
+  // 全新 clone / CI 上必然如此（没有 ~/.dsh）。此时没有任何可比对的基准，
+  // 只能跳过；把它当失败会让这条安全断言在任何干净环境里永久飘红。
+  if (dshNames === null || dshNames.size === 0) {
     console.log('  ⏭  跳过：未找到 DSH 工具包（设 DSH_TOOL_PACKAGES 指向 @deepseek-ai 目录即可启用）');
     return;
   }
