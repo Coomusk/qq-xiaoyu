@@ -1,11 +1,15 @@
-# 行尾：不在全局强制转换。
+# 行尾：只对**必须有固定行尾**的类型钉死，其余交给 git 的 text=auto。
 #
-# 这个仓库的源文件是 Windows 上以 CRLF 写成并维护的，而 `scripts/test-preset-prompt.mjs`
-# 有一条断言「写回时沿用文件的主导行尾，不得吞掉块尾空行」——它会读真实的 preset 文件。
-# 一旦在这里写 `* text=auto eol=lf`，checkout 出来就是 LF，这条断言在**任何全新 clone**
-# 上都会红（而作者本地因为文件没被重新 checkout，看不出来）。所以这里只声明二进制与
-# 少数必须有固定行尾的类型，其余交给 git 的 text=auto。
+# 踩过的坑：`scripts/test-preset-prompt.mjs` 有一条断言「写回时沿用文件的主导行尾，
+# 不得吞掉块尾空行」，读的是真实的 `dsh/agent-presets/*/agent.cordis.yml`。
+# 只要 checkout 出来的行尾随平台/`core.autocrlf` 变化，这条断言就会在别人的 clone 上红，
+# 而作者本地（文件没被重新 checkout）看不出来。所以 preset 显式钉成 CRLF。
 * text=auto
+
+# preset 源文件与控制台写回的目标：固定 CRLF（bridge 与测试都按 CRLF 读回）
+dsh/agent-presets/**/*.yml  text eol=crlf
+plugins/qq-agent-presets/presets/*.yml  text eol=crlf
+
 
 # Windows 批处理必须 CRLF，否则 cmd 解析出错
 *.bat   text eol=crlf
