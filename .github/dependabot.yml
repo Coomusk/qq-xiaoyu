@@ -4,26 +4,31 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    # 这个项目不是"版本越新越好"：
+    #   · @snowluma/* 靠 postinstall 对 dist 做机械修补（补 .js 扩展名），版本一动补丁假设就可能失效；
+    #   · 大版本会改 API（js-yaml 5、zod 5 …），而这里的代码是按当前大版本写的。
+    # 所以只接小版本与补丁，@snowluma 一律不动，升级走人工 PR。
+    ignore:
+      - dependency-name: "@snowluma/*"
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
-      # 框架类依赖一起升，避免「sdk 升了 mcp 没升」的半套状态
       mcp:
         patterns:
           - "@modelcontextprotocol/*"
       dsh:
         patterns:
           - "@deepseek-ai/*"
-      # @snowluma/* 由 postinstall 打补丁，升级前必须人工确认补丁仍匹配
-      snowluma:
-        patterns:
-          - "@snowluma/*"
-        update-types:
-          - minor
-          - patch
-      dev-deps:
-        dependency-type: development
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    open-pull-requests-limit: 2
+    ignore:
+      # Actions 的大版本偶尔会改默认行为（Node 版本、缓存语义），先手动升
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major

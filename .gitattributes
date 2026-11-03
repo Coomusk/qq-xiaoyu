@@ -1,9 +1,17 @@
-# 统一换行：仓库内用 LF，只有 Windows 批处理用 CRLF
-* text=auto eol=lf
+# 行尾：不在全局强制转换。
+#
+# 这个仓库的源文件是 Windows 上以 CRLF 写成并维护的，而 `scripts/test-preset-prompt.mjs`
+# 有一条断言「写回时沿用文件的主导行尾，不得吞掉块尾空行」——它会读真实的 preset 文件。
+# 一旦在这里写 `* text=auto eol=lf`，checkout 出来就是 LF，这条断言在**任何全新 clone**
+# 上都会红（而作者本地因为文件没被重新 checkout，看不出来）。所以这里只声明二进制与
+# 少数必须有固定行尾的类型，其余交给 git 的 text=auto。
+* text=auto
 
+# Windows 批处理必须 CRLF，否则 cmd 解析出错
 *.bat   text eol=crlf
 *.cmd   text eol=crlf
-*.ps1   text eol=lf
+# PowerShell 脚本与 .vbs 同理
+*.ps1   text eol=crlf
 *.vbs   text eol=crlf
 
 # 二进制
@@ -17,6 +25,5 @@
 *.ogg   binary
 *.zip   binary
 
-# 语言统计：文档也算进来，测试夹具不算
-*.md    text
+# 语言统计：测试夹具不算入项目语言
 scripts/fixtures/** linguist-vendored
